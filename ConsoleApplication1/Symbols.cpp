@@ -8,7 +8,6 @@
 // Copyright (c) 2021. All Rights Reserved.
 
 #include "Symbols.h"
-#include <iostream>
 #include <sstream>
 
 namespace Symbols {
@@ -34,7 +33,6 @@ namespace Symbols {
             // substring not found? create
             if (it == m->end())
             {
-                std::cout << "Symbol '" << s << "' not found, return empty." << std::endl;
                 break;
             }
             else // substring found
@@ -43,7 +41,6 @@ namespace Symbols {
                 {
                     // return the value
                     bRet = it->second;
-                    std::cout << "Symbol '" << s << "' found, return CSymbol." << std::endl;
                 }
                 else
                 {
@@ -51,12 +48,10 @@ namespace Symbols {
                     {
                         // advance
                         m = m->find(s)->second.get<treeMap>();
-                        std::cout << "Symbol '" << s << "' is a folder, advancing." << std::endl;
                     }
                     else
                     {
                         // problem: Symbol not a folder
-                        std::cout << "Symbol '" << s << "' not a folder, return empty." << std::endl;
                         break;
                     }
                 }
@@ -89,13 +84,11 @@ namespace Symbols {
                 if (lastSubs && oId != ObjectId::FolderType)
                 {
                     m->insert(std::make_pair(s, CSymbol(oId, std::move(value))));
-                    std::cout << "Symbol '" << s << "' not found, inserting variable and setting value" << std::endl;
                 }
                 else // if folder type add folder
                 {
                     m->insert(std::make_pair(s, CSymbol(ObjectId::FolderType, treeMap())));
                     m = const_cast<treeMap*>(m->find(s)->second.get<treeMap>());
-                    std::cout << "Symbol '" << s << "' not found, inserting folder and advancing." << std::endl;
                 }
             }
             else // substring found
@@ -106,12 +99,10 @@ namespace Symbols {
                     {
                         // update value
                         it->second.set(std::move(value));
-                        std::cout << "Symbol '" << s << "' already defined, value has been updated, exiting." << std::endl;
                     }
                     else
                     {
                         // problem: Symbol already defined
-                        std::cout << "Symbol '" << s << "' already defined with different type, aborting." << std::endl;
                         bRet = false;
                         break;
                     }
@@ -122,12 +113,10 @@ namespace Symbols {
                     {
                         // advance
                         m = (treeMap*)m->find(s)->second.get<treeMap>();
-                        std::cout << "Symbol '" << s << "' is a folder, advancing." << std::endl;
                     }
                     else
                     {
                         // problem: Symbol not a folder
-                        std::cout << "Symbol '" << s << "' not a folder, aborting." << std::endl;
                         bRet = false;
                         break;
                     }

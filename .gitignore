@@ -5,3 +5,9 @@
 /x64/Debug
 /.vs
 /ConsoleApplication1/x64/Debug
+/x64/Release
+/Release
+/Debug
+/ConsoleApplication1/x64/Release
+/ConsoleApplication1/Release
+/ConsoleApplication1/Debug

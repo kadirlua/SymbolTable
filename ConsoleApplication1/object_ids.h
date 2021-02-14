@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-	enum class ObjectId : uint32_t
+	enum class OpcUAObjectId : uint32_t
 	{
 		Null = 0,
 		Boolean = 1,

@@ -73,7 +73,7 @@ namespace Symbols {
         public:
             OpcServerArgs() = default;   //default constructor
             ~OpcServerArgs() = default;  //destructor
-            OpcServerArgs(std::string symbolName, OpcUAObjectId objectId, std::any& oldVal, std::any& newVal) :
+            OpcServerArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal) :
                 m_symbolName(symbolName),
                 m_objectId(objectId),
                 m_oldVal(oldVal),
@@ -83,8 +83,8 @@ namespace Symbols {
             }
             std::string m_symbolName;
             OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            std::any& m_oldVal;
-            std::any& m_newVal;
+            const std::any& m_oldVal;
+            const std::any& m_newVal;
         };
 
         class OpcClientArgs
@@ -92,7 +92,7 @@ namespace Symbols {
         public:
             OpcClientArgs() = default;   //default constructor
             ~OpcClientArgs() = default;  //destructor
-            OpcClientArgs(std::string symbolName, OpcUAObjectId objectId, std::any& oldVal, std::any& newVal) :
+            OpcClientArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal) :
                 m_symbolName(symbolName),
                 m_objectId(objectId),
                 m_oldVal(oldVal),
@@ -102,8 +102,8 @@ namespace Symbols {
             }
             std::string m_symbolName;
             OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            std::any& m_oldVal;
-            std::any& m_newVal;
+            const std::any& m_oldVal;
+            const std::any& m_newVal;
         };
 
         class DatabaseArgs
@@ -111,7 +111,7 @@ namespace Symbols {
         public:
             DatabaseArgs() = default;   //default constructor
             ~DatabaseArgs() = default;  //destructor
-            DatabaseArgs(std::string symbolName, OpcUAObjectId objectId, std::any& oldVal, std::any& newVal, int transactionId) :
+            DatabaseArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal, int transactionId) :
                 m_symbolName(symbolName),
                 m_objectId(objectId),
                 m_oldVal(oldVal),
@@ -122,8 +122,8 @@ namespace Symbols {
             }
             std::string m_symbolName;
             OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            std::any& m_oldVal;
-            std::any& m_newVal;
+            const std::any& m_oldVal;
+            const std::any& m_newVal;
             int m_transactionId;
         };
 
@@ -132,7 +132,7 @@ namespace Symbols {
         public:
             TransactionArgs() = default;   //default constructor
             ~TransactionArgs() = default;  //destructor
-            TransactionArgs(std::string symbolName, OpcUAObjectId objectId, std::any& oldVal, std::any& newVal, int deviceTransactionId) :
+            TransactionArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal, int deviceTransactionId) :
                 m_symbolName(symbolName),
                 m_objectId(objectId),
                 m_oldVal(oldVal),
@@ -143,8 +143,8 @@ namespace Symbols {
             }
             std::string m_symbolName;
             OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            std::any& m_oldVal;
-            std::any& m_newVal;
+            const std::any& m_oldVal;
+            const std::any& m_newVal;
             int m_deviceTransactionId;
         };
 
@@ -250,9 +250,9 @@ namespace Symbols {
 
         /*
         *   get the std::any value we had stored.
-        *   returns the address of the object we created early, otherwise nullptr.
+        *   returns the object itself for reading.
         */
-        std::any get() {
+        const std::any& get() const noexcept {
             return m_value;
         }
 
@@ -261,7 +261,7 @@ namespace Symbols {
         *   returns if there was a change and then if it increased or decreased.
         */
         CSymbolEvent::EventFireType compare(const std::any& value) {
-            CSymbolEvent::EventFireType result = CSymbolEvent::EventFireType::eft_None;
+            CSymbolEvent::EventFireType result{ CSymbolEvent::EventFireType::eft_None };
             switch (m_objectId)
             {
             case OpcUAObjectId::Null:
@@ -270,9 +270,10 @@ namespace Symbols {
             case OpcUAObjectId::Boolean:
             {
                 const auto& b = *get<bool>();
-                if (std::any_cast<bool>(value) > b)
+                auto comp = std::any_cast<bool>(value);
+                if (comp > b)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<bool>(value) < b)
+                else if (comp < b)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
@@ -282,9 +283,10 @@ namespace Symbols {
             case OpcUAObjectId::Float:
             {
                 const auto& f = *get<float>();
-                if (std::any_cast<float>(value) > f)
+                auto comp = std::any_cast<float>(value);
+                if (comp > f)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<float>(value) < f)
+                else if (comp < f)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
@@ -294,9 +296,10 @@ namespace Symbols {
             case OpcUAObjectId::Double:
             {
                 const auto& d = *get<double>();
-                if (std::any_cast<double>(value) > d)
+                auto comp = std::any_cast<double>(value);
+                if (comp > d)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<double>(value) < d)
+                else if (comp < d)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
@@ -306,9 +309,10 @@ namespace Symbols {
             case OpcUAObjectId::String:  //it's not a raw string
             {
                 const auto& s = *get<std::string>();
-                if (std::any_cast<std::string>(value) > s)
+                auto comp = std::any_cast<std::string>(value);
+                if (comp > s)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<std::string>(value) < s)
+                else if (comp < s)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
@@ -318,9 +322,10 @@ namespace Symbols {
             case OpcUAObjectId::Integer:
             {
                 const auto& i = *get<int>();
-                if (std::any_cast<int>(value) > i)
+                auto comp = std::any_cast<int>(value);
+                if (comp > i)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<int>(value) < i)
+                else if (comp < i)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;

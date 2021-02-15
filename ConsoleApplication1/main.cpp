@@ -150,7 +150,7 @@ public:
 
     void UpdateCallback(void* args)
     {
-        Symbols::CSymbolEvent::OpcServerArgs* e = (Symbols::CSymbolEvent::OpcServerArgs*)args;
+        Symbols::CSymbolEvent::OpcServerArgs* e = reinterpret_cast<Symbols::CSymbolEvent::OpcServerArgs*>(args);
 
         std::cout << "OpcServer event UpdateCallback: the value of '" << e->m_symbolName << "' ";
         if (e->m_symbolName == std::string("folder1.folder1a.folder1a1.i"))

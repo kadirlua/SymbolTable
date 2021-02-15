@@ -69,7 +69,7 @@ namespace Symbols {
         bool bRet = true;
 
         bool lastSubs = false;
-        const treeMap* m = this;
+        treeMap* m = this;
         std::istringstream f(name);
         std::string s;
 
@@ -95,14 +95,14 @@ namespace Symbols {
                 if (lastSubs)
                 {
                     // add the event
-                    ((CSymbol)it->second).addEvent(symbolEvent.getEventId(), symbolEvent);
+                    it->second.addEvent(symbolEvent.getEventId(), symbolEvent);
                 }
                 else
                 {
                     if (it->second.getObjectId() == OpcUAObjectId::FolderType)
                     {
                         // advance
-                        m = it->second.get<treeMap>();
+                        m = const_cast<treeMap*>(it->second.get<treeMap>());
                     }
                     else
                     {
@@ -147,7 +147,7 @@ namespace Symbols {
                 if (lastSubs)
                 {
                     // 1: get the current value
-                    std::any oldVal = it->second.get();
+                    const std::any& oldVal = it->second.get();
 
                     // 2: determine how the value changed
                     Symbols::CSymbolEvent::EventFireType theChange = it->second.compare(value);
@@ -157,8 +157,7 @@ namespace Symbols {
 
                     if (theChange != Symbols::CSymbolEvent::EventFireType::eft_None)
                     {
-                        std::map<int, CSymbolEvent>::iterator itm;
-                        for (itm = it->second.events.begin(); itm != it->second.events.end(); itm++)
+                        for (auto itm = it->second.events.begin(); itm != it->second.events.end(); itm++)
                         {
                             // 4: SATISFY Symbols::CSymbolEvent::EventFireType
                             if (itm->second.getEventFireType() != Symbols::CSymbolEvent::EventFireType::eft_AnyChange &&
@@ -194,7 +193,7 @@ namespace Symbols {
                     if (it->second.getObjectId() == OpcUAObjectId::FolderType)
                     {
                         // advance
-                        m = (treeMap*)it->second.get<treeMap>();
+                        m = const_cast<treeMap*>(it->second.get<treeMap>());
                     }
                     else
                     {
@@ -263,7 +262,7 @@ namespace Symbols {
                     if (it->second.getObjectId() == OpcUAObjectId::FolderType)
                     {
                         // advance
-                        m = (treeMap*)it->second.get<treeMap>();
+                        m = const_cast<treeMap*>(it->second.get<treeMap>());
                     }
                     else
                     {
@@ -314,7 +313,7 @@ namespace Symbols {
                     if (it->second.getObjectId() == OpcUAObjectId::FolderType)
                     {
                         // advance
-                        m = (treeMap*)it->second.get<treeMap>();
+                        m = const_cast<treeMap*>(it->second.get<treeMap>());
                     }
                     else
                     {

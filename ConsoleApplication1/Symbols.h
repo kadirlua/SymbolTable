@@ -162,15 +162,15 @@ namespace Symbols {
 
         }
 
-        int getEventId() {
+        int getEventId() const noexcept {
             return m_eventId;
         }
 
-        EventType getEventType() {
+        EventType getEventType() const noexcept {
             return m_type;
         }
 
-        EventFireType getEventFireType() {
+        EventFireType getEventFireType() const noexcept {
             return m_fireType;
         }
 
@@ -252,7 +252,7 @@ namespace Symbols {
         *   get the std::any value we had stored.
         *   returns the address of the object we created early, otherwise nullptr.
         */
-        const std::any get() {
+        std::any get() {
             return m_value;
         }
 
@@ -268,48 +268,63 @@ namespace Symbols {
                 break;
 
             case OpcUAObjectId::Boolean:
-                if (std::any_cast<bool>(value) > std::any_cast<bool>(m_value))
+            {
+                const auto& b = *get<bool>();
+                if (std::any_cast<bool>(value) > b)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<bool>(value) < std::any_cast<bool>(m_value))
+                else if (std::any_cast<bool>(value) < b)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
+            }
                 break;
 
             case OpcUAObjectId::Float:
-                if (std::any_cast<float>(value) > std::any_cast<float>(m_value))
+            {
+                const auto& f = *get<float>();
+                if (std::any_cast<float>(value) > f)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<float>(value) < std::any_cast<float>(m_value))
+                else if (std::any_cast<float>(value) < f)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
+            }
                 break;
 
             case OpcUAObjectId::Double:
-                if (std::any_cast<double>(value) > std::any_cast<double>(m_value))
+            {
+                const auto& d = *get<double>();
+                if (std::any_cast<double>(value) > d)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<double>(value) < std::any_cast<double>(m_value))
+                else if (std::any_cast<double>(value) < d)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
+            }
                 break;
 
             case OpcUAObjectId::String:  //it's not a raw string
-                if (std::any_cast<std::string>(value) > std::any_cast<std::string>(m_value))
+            {
+                const auto& s = *get<std::string>();
+                if (std::any_cast<std::string>(value) > s)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<std::string>(value) < std::any_cast<std::string>(m_value))
+                else if (std::any_cast<std::string>(value) < s)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
+            }
                 break;
 
             case OpcUAObjectId::Integer:
-                if (std::any_cast<int>(value) > std::any_cast<int>(m_value))
+            {
+                const auto& i = *get<int>();
+                if (std::any_cast<int>(value) > i)
                     result = CSymbolEvent::EventFireType::eft_Increase;
-                else if (std::any_cast<int>(value) < std::any_cast<int>(m_value))
+                else if (std::any_cast<int>(value) < i)
                     result = CSymbolEvent::EventFireType::eft_Decrease;
                 else
                     result = CSymbolEvent::EventFireType::eft_None;
+            }
                 break;
 
             }

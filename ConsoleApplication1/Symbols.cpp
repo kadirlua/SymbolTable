@@ -12,6 +12,82 @@
 
 namespace Symbols {
 
+    CSymbolEvent::EventFireType CSymbol::compare(const std::any& value) {
+        CSymbolEvent::EventFireType result{ CSymbolEvent::EventFireType::eft_None };
+        switch (m_objectId)
+        {
+        case OpcUAObjectId::Null:
+            break;
+
+        case OpcUAObjectId::Boolean:
+        {
+            const auto& b = *get<bool>();
+            auto comp = std::any_cast<bool>(value);
+            if (comp > b)
+                result = CSymbolEvent::EventFireType::eft_Increase;
+            else if (comp < b)
+                result = CSymbolEvent::EventFireType::eft_Decrease;
+            else
+                result = CSymbolEvent::EventFireType::eft_None;
+        }
+        break;
+
+        case OpcUAObjectId::Float:
+        {
+            const auto& f = *get<float>();
+            auto comp = std::any_cast<float>(value);
+            if (comp > f)
+                result = CSymbolEvent::EventFireType::eft_Increase;
+            else if (comp < f)
+                result = CSymbolEvent::EventFireType::eft_Decrease;
+            else
+                result = CSymbolEvent::EventFireType::eft_None;
+        }
+        break;
+
+        case OpcUAObjectId::Double:
+        {
+            const auto& d = *get<double>();
+            auto comp = std::any_cast<double>(value);
+            if (comp > d)
+                result = CSymbolEvent::EventFireType::eft_Increase;
+            else if (comp < d)
+                result = CSymbolEvent::EventFireType::eft_Decrease;
+            else
+                result = CSymbolEvent::EventFireType::eft_None;
+        }
+        break;
+
+        case OpcUAObjectId::String:  //it's not a raw string
+        {
+            const auto& s = *get<std::string>();
+            auto comp = std::any_cast<std::string>(value);
+            if (comp > s)
+                result = CSymbolEvent::EventFireType::eft_Increase;
+            else if (comp < s)
+                result = CSymbolEvent::EventFireType::eft_Decrease;
+            else
+                result = CSymbolEvent::EventFireType::eft_None;
+        }
+        break;
+
+        case OpcUAObjectId::Integer:
+        {
+            const auto& i = *get<int>();
+            auto comp = std::any_cast<int>(value);
+            if (comp > i)
+                result = CSymbolEvent::EventFireType::eft_Increase;
+            else if (comp < i)
+                result = CSymbolEvent::EventFireType::eft_Decrease;
+            else
+                result = CSymbolEvent::EventFireType::eft_None;
+        }
+        break;
+
+        }
+        return result;
+    }
+
     CSymbol CSymbolTable::GetValue(std::string name) const
     {
         //copy elision for name should work for c++ 17

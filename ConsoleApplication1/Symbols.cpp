@@ -1,7 +1,7 @@
 // Symbols.cpp : implementation file
 // 
 // Symbols Interface for PLCiManagementConsole App
-// Version: 1.0
+// Version: 1.3
 // Date: February 2021
 // Authors: Kadir ALTINDAG, Suat ARICANLI
 // Email: kadir.altindag@aricanli.com.tr, suat@aricanli.com.tr

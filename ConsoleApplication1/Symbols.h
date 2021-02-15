@@ -390,7 +390,7 @@ namespace Symbols {
         bool AddEvent(std::string name, Symbols::CSymbolEvent symbolEvent);
 
         /*
-        *   Set value of a given name symbol instance.
+        *   Insert a value of a given name symbol instance.
         *   Params:
         *   name: given name which is key of map.
         *   oId: type of variable we send.
@@ -400,7 +400,7 @@ namespace Symbols {
         bool InsertValue(std::string name, OpcUAObjectId oId, std::any&& value);
 
         /*
-        *   Set value of a given name symbol instance.
+        *   Delete a value of a given name symbol instance.
         *   Params:
         *   name: given name which is key of map.
         *   Returns: returns true if successful, otherwise false.

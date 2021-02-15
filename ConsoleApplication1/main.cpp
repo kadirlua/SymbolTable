@@ -208,7 +208,7 @@ Symbols::CSymbolTable CSymbolTest::symbols;
 int main()
 {
     CSymbolTest test;
-    //COpcServerSubscriptionTest opcServerTest;
+    COpcServerSubscriptionTest opcServerTest;
     //COpcClientSubscriptionTest opcClientTest;
     //CDatabaseSubscriptionTest databaseTest;
     CTransactionSubscriptionTest transactionTest;
@@ -219,7 +219,7 @@ int main()
     auto sym = test.symbols.GetValue("");
     std::cout << "type: " << static_cast<int>(sym.getObjectId()) << "\n\n\n";
 
-    //opcServerTest.assignEvents();
+    opcServerTest.assignEvents();
     //opcClientTest.assignEvents();
     //databaseTest.assignEvents();
     transactionTest.assignEvents();

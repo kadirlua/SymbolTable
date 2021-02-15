@@ -243,22 +243,22 @@ namespace Symbols {
                             // 5: construct arguments for specified event type and fire event
                             if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_OpcServer)
                             {
-                                Symbols::CSymbolEvent::OpcServerArgs arg = Symbols::CSymbolEvent::OpcServerArgs(name, it->second.getObjectId(), oldVal, value);
+                                Symbols::CSymbolEvent::OpcServerArgs arg(name, it->second.getObjectId(), oldVal, value);
                                 itm->second.m_event(&arg);
                             }
                             else if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_OpcClient)
                             {
-                                Symbols::CSymbolEvent::OpcClientArgs arg = Symbols::CSymbolEvent::OpcClientArgs(name, it->second.getObjectId(), oldVal, value);
+                                Symbols::CSymbolEvent::OpcClientArgs arg(name, it->second.getObjectId(), oldVal, value);
                                 itm->second.m_event(&arg);
                             }
                             else if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_Database)
                             {
-                                Symbols::CSymbolEvent::DatabaseArgs arg = Symbols::CSymbolEvent::DatabaseArgs(name, it->second.getObjectId(), oldVal, value, 1);
+                                Symbols::CSymbolEvent::DatabaseArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
                                 itm->second.m_event(&arg);
                             }
                             else if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_Transaction)
                             {
-                                Symbols::CSymbolEvent::TransactionArgs arg = Symbols::CSymbolEvent::TransactionArgs(name, it->second.getObjectId(), oldVal, value, 1);
+                                Symbols::CSymbolEvent::TransactionArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
                                 itm->second.m_event(&arg);
                             }
                         }

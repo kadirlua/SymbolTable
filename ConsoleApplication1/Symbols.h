@@ -19,8 +19,8 @@
 //  *Added methods InsertValue and DeleteValue. SetValue no longer inserts a symbol.
 //  *GetValue now returns root folder if parameter is empty string
 //  *Added CSymbolEvent class, and CSymbol events map. Each Symbol may be assigned one or more events.
-//   Event parameter defined as void*, may be one of ????Args classes
-//   Args classes will evolve as we go
+//   Event parameter defined as void*, may be one of ????BaseArgs classes
+//   BaseArgs classes will evolve as we go
 //  *Added CSymbol.compare()
 //  *Added CSymbol.get()
 
@@ -68,87 +68,81 @@ namespace Symbols {
             eft_Decrease
         };
 
-        class OpcServerArgs
+        //the base class for sending args between events
+        class BaseArgs {
+        public:
+            BaseArgs() = default;
+            virtual ~BaseArgs() {};    //This makes BaseArgs a polymorphic type
+
+            std::string m_symbolName;
+            OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
+            const std::any* m_oldVal = nullptr;
+            const std::any* m_newVal = nullptr;
+        };
+
+        class OpcServerArgs : public BaseArgs
         {
         public:
             OpcServerArgs() = default;   //default constructor
             ~OpcServerArgs() = default;  //destructor
-            OpcServerArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal) :
-                m_symbolName(symbolName),
-                m_objectId(objectId),
-                m_oldVal(oldVal),
-                m_newVal(newVal)
+            OpcServerArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal)
             {
-
+                m_symbolName = symbolName;
+                m_objectId = objectId;
+                m_oldVal = &oldVal;
+                m_newVal = &newVal;
             }
-            std::string m_symbolName;
-            OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            const std::any& m_oldVal;
-            const std::any& m_newVal;
         };
 
-        class OpcClientArgs
+        class OpcClientArgs : public BaseArgs
         {
         public:
             OpcClientArgs() = default;   //default constructor
             ~OpcClientArgs() = default;  //destructor
-            OpcClientArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal) :
-                m_symbolName(symbolName),
-                m_objectId(objectId),
-                m_oldVal(oldVal),
-                m_newVal(newVal)
+            OpcClientArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal)
             {
-
+                m_symbolName = symbolName;
+                m_objectId = objectId;
+                m_oldVal = &oldVal;
+                m_newVal = &newVal;
             }
-            std::string m_symbolName;
-            OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            const std::any& m_oldVal;
-            const std::any& m_newVal;
         };
 
-        class DatabaseArgs
+        class DatabaseArgs : public BaseArgs
         {
         public:
             DatabaseArgs() = default;   //default constructor
             ~DatabaseArgs() = default;  //destructor
-            DatabaseArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal, int transactionId) :
-                m_symbolName(symbolName),
-                m_objectId(objectId),
-                m_oldVal(oldVal),
-                m_newVal(newVal),
+            DatabaseArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal, int transactionId):
                 m_transactionId(transactionId)
             {
-
+                m_symbolName = symbolName;
+                m_objectId = objectId;
+                m_oldVal = &oldVal;
+                m_newVal = &newVal;
             }
-            std::string m_symbolName;
-            OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            const std::any& m_oldVal;
-            const std::any& m_newVal;
-            int m_transactionId;
+            
+            int m_transactionId{};
         };
 
-        class TransactionArgs
+        class TransactionArgs : public BaseArgs
         {
         public:
             TransactionArgs() = default;   //default constructor
             ~TransactionArgs() = default;  //destructor
             TransactionArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal, int deviceTransactionId) :
-                m_symbolName(symbolName),
-                m_objectId(objectId),
-                m_oldVal(oldVal),
-                m_newVal(newVal),
                 m_deviceTransactionId(deviceTransactionId)
             {
-
+                m_symbolName = symbolName;
+                m_objectId = objectId;
+                m_oldVal = &oldVal;
+                m_newVal = &newVal;
             }
-            std::string m_symbolName;
-            OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
-            const std::any& m_oldVal;
-            const std::any& m_newVal;
-            int m_deviceTransactionId;
+
+            int m_deviceTransactionId{};
         };
 
-        using SymbolEvent = std::function<void(void* args)>;
+        using SymbolEvent = std::function<void(BaseArgs*)>;
 
     public:
         CSymbolEvent() = default;   //default constructor

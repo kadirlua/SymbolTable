@@ -4,6 +4,34 @@
 #include <iostream>
 #include "Symbols.h"
 
+//Should be only one instance
+//TODO: Improve for thread safety
+static inline void UpdateCallback(Symbols::CSymbolEvent::BaseArgs* args)
+{
+    if (auto e = dynamic_cast<Symbols::CSymbolEvent::OpcServerArgs*>(args); e) {    //if a type of OpcServerArgs...
+        std::cout << "OpcServer event UpdateCallback: the value of '" << e->m_symbolName << "' ";
+        if (e->m_symbolName == std::string("folder1.folder1a.folder1a1.i"))
+            std::cout << "became: " << std::any_cast<int>(*e->m_newVal) << std::endl;
+        else if (e->m_symbolName == std::string("folder1.d"))
+            std::cout << "became: " << std::any_cast<double>(*e->m_newVal) << std::endl;
+        else if (e->m_symbolName == std::string("f"))
+            std::cout << "became: " << std::any_cast<float>(*e->m_newVal) << std::endl;
+        else
+            std::cout << " is unsolicited." << std::endl;
+    }
+    else if (auto e = dynamic_cast<Symbols::CSymbolEvent::TransactionArgs*>(args); e) {    //if a type of TransactionArgs...
+        std::cout << "The id " << e->m_deviceTransactionId << " of transaction event UpdateCallback: the value of '" << e->m_symbolName << "' ";
+        if (e->m_symbolName == std::string("folder1.folder1a.folder1a1.i"))
+            std::cout << "became: " << std::any_cast<int>(*e->m_newVal) << std::endl;
+        else if (e->m_symbolName == std::string("folder1.d"))
+            std::cout << "became: " << std::any_cast<double>(*e->m_newVal) << std::endl;
+        else if (e->m_symbolName == std::string("f"))
+            std::cout << "became: " << std::any_cast<float>(*e->m_newVal) << std::endl;
+        else
+            std::cout << " is unsolicited." << std::endl;
+    }
+}
+
 class CSymbolTest
 {
 public:
@@ -142,25 +170,35 @@ public:
                 0, 
                 Symbols::CSymbolEvent::EventType::et_OpcServer, 
                 Symbols::CSymbolEvent::EventFireType::eft_AnyChange, 
-                std::bind(&COpcServerSubscriptionTest::UpdateCallback, this, std::placeholders::_1)
+                std::bind(&UpdateCallback, std::placeholders::_1)
             ));
-        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::CSymbolEvent(0, Symbols::CSymbolEvent::EventType::et_OpcServer, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&COpcServerSubscriptionTest::UpdateCallback, this, std::placeholders::_1)));
-        CSymbolTest::symbols.AddEvent("f", Symbols::CSymbolEvent(0, Symbols::CSymbolEvent::EventType::et_OpcServer, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&COpcServerSubscriptionTest::UpdateCallback, this, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::CSymbolEvent(0, Symbols::CSymbolEvent::EventType::et_OpcServer, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("f", Symbols::CSymbolEvent(0, Symbols::CSymbolEvent::EventType::et_OpcServer, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
     }
+};
 
-    void UpdateCallback(void* args)
+//Transaction Test
+class CTransactionSubscriptionTest
+{
+public:
+    CTransactionSubscriptionTest() = default;   //default constructor
+    ~CTransactionSubscriptionTest() = default;  //destructor
+
+    void assignEvents()
     {
-        Symbols::CSymbolEvent::OpcServerArgs* e = reinterpret_cast<Symbols::CSymbolEvent::OpcServerArgs*>(args);
+        CSymbolTest::symbols.AddEvent("folder1.folder1a.folder1a1.i",
+            Symbols::CSymbolEvent(
+                15,
+                Symbols::CSymbolEvent::EventType::et_Transaction,
+                Symbols::CSymbolEvent::EventFireType::eft_AnyChange,
+                std::bind(&UpdateCallback, std::placeholders::_1)
+            ));
+        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::CSymbolEvent(5, 
+            Symbols::CSymbolEvent::EventType::et_Transaction, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, 
+            std::bind(&UpdateCallback, std::placeholders::_1)));
 
-        std::cout << "OpcServer event UpdateCallback: the value of '" << e->m_symbolName << "' ";
-        if (e->m_symbolName == std::string("folder1.folder1a.folder1a1.i"))
-            std::cout << "became: " << std::any_cast<int>(e->m_newVal) << std::endl;
-        else if (e->m_symbolName == std::string("folder1.d"))
-            std::cout << "became: " << std::any_cast<double>(e->m_newVal) << std::endl;
-        else if (e->m_symbolName == std::string("f"))
-            std::cout << "became: " << std::any_cast<float>(e->m_newVal) << std::endl;
-        else
-            std::cout << " is unsolicited." << std::endl;
+        CSymbolTest::symbols.AddEvent("f", Symbols::CSymbolEvent(2, Symbols::CSymbolEvent::EventType::et_Transaction, 
+            Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
     }
 };
 
@@ -170,17 +208,21 @@ Symbols::CSymbolTable CSymbolTest::symbols;
 int main()
 {
     CSymbolTest test;
-    COpcServerSubscriptionTest opcServerTest;
+    //COpcServerSubscriptionTest opcServerTest;
     //COpcClientSubscriptionTest opcClientTest;
     //CDatabaseSubscriptionTest databaseTest;
-    //CTransactionSubscriptionTest transactionTest;
+    CTransactionSubscriptionTest transactionTest;
 
     test.insertItems();
 
-    opcServerTest.assignEvents();
+    //root item for testing
+    auto sym = test.symbols.GetValue("");
+    std::cout << "type: " << static_cast<int>(sym.getObjectId()) << "\n\n\n";
+
+    //opcServerTest.assignEvents();
     //opcClientTest.assignEvents();
     //databaseTest.assignEvents();
-    //transactionTest.assignEvents();
+    transactionTest.assignEvents();
 
     test.updateItems();
 

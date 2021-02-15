@@ -12,7 +12,7 @@
 
 namespace Symbols {
 
-    CSymbolEvent::EventFireType CSymbol::compare(const std::any& value) {
+    CSymbolEvent::EventFireType CSymbol::compare(const std::any& value) const {
         CSymbolEvent::EventFireType result{ CSymbolEvent::EventFireType::eft_None };
         switch (m_objectId)
         {
@@ -192,7 +192,7 @@ namespace Symbols {
         return bRet;
     }
 
-    bool CSymbolTable::SetValue(std::string name, std::any&& value)
+    bool CSymbolTable::SetValue(std::string name, std::any value)
     {
         //copy elision for name should work for c++ 17
         bool bRet = true;
@@ -229,7 +229,7 @@ namespace Symbols {
                     Symbols::CSymbolEvent::EventFireType theChange = it->second.compare(value);
 
                     // 3: update with new value
-                    it->second.set(std::move(value));
+                    it->second.set(value);
 
                     if (theChange != Symbols::CSymbolEvent::EventFireType::eft_None)
                     {
@@ -283,7 +283,7 @@ namespace Symbols {
         return bRet;
     }
 
-    bool CSymbolTable::InsertValue(std::string name, OpcUAObjectId oId, std::any&& value)
+    bool CSymbolTable::InsertValue(std::string name, OpcUAObjectId oId, std::any value)
     {
         //copy elision for name should work for c++ 17
         bool bRet = true;
@@ -309,7 +309,7 @@ namespace Symbols {
                 // if base variable type add variable
                 if (lastSubs && oId != OpcUAObjectId::FolderType)
                 {
-                    m->insert(std::make_pair(s, CSymbol(oId, std::move(value))));
+                    m->insert(std::make_pair(s, CSymbol(oId, value)));
                 }
                 else // if folder type add folder
                 {
@@ -324,7 +324,7 @@ namespace Symbols {
                     if (it->second.getObjectId() == oId)
                     {
                         // update value
-                        it->second.set(std::move(value));
+                        it->second.set(value);
                     }
                     else
                     {

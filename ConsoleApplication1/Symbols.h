@@ -260,7 +260,7 @@ namespace Symbols {
         *   compare a value with this one.
         *   returns if there was a change and then if it increased or decreased.
         */
-        CSymbolEvent::EventFireType compare(const std::any& value);
+        CSymbolEvent::EventFireType compare(const std::any& value) const;
 
         /*
         *   get the type of the object we stored in any.
@@ -324,7 +324,7 @@ namespace Symbols {
         *   value: any type of variable to hold into map.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool SetValue(std::string name, std::any&& value);
+        bool SetValue(std::string name, std::any value);
 
         /*
         *   Add an event to a given name symbol instance.
@@ -343,7 +343,7 @@ namespace Symbols {
         *   value: any type of variable to hold into map.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool InsertValue(std::string name, OpcUAObjectId oId, std::any&& value);
+        bool InsertValue(std::string name, OpcUAObjectId oId, std::any value);
 
         /*
         *   Delete a value of a given name symbol instance.

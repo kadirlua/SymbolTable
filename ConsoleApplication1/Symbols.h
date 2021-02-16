@@ -28,9 +28,7 @@
 #include "object_ids.h"
 #include <any>
 #include <functional>
-#include <string>
-#include <map>
-//#include <unordered_map>    //if you do not want to sortable map, uncomment this line.
+#include "SymbolMap.h"
 
 namespace Symbols {
 
@@ -281,10 +279,6 @@ namespace Symbols {
         std::any m_value;   //can be any value of object
 
     };
-
-    //our map to hold whole datas
-    using treeMap = std::map<std::string, CSymbol>;    //sortable map class
-    //using treeMap = std::unordered_map<std::string, CSymbol>;    //do not want this for now
 
     /*
     *   Symbol table class to hold symbol data which is set of unknown variables.

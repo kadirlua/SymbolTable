@@ -35,8 +35,29 @@ static inline void UpdateCallback(Symbols::CSymbolEvent::BaseArgs* args)
 class CSymbolTest
 {
 public:
-    CSymbolTest() = default;   //default constructor
-    ~CSymbolTest() = default;  //destructor
+    CSymbolTest(unsigned int nThreads = std::thread::hardware_concurrency()) 
+    {
+        std::cout << nThreads << " threads will start working soon" << "\n\n";
+        for (unsigned int i = 0; i < nThreads; i++)
+            m_VecThreads.emplace_back(std::thread(&CSymbolTest::DummyThreadTest, this, 10 * i, 50 * i + 100));
+
+    }
+
+    ~CSymbolTest() 
+    {
+        const auto vecSize = m_VecThreads.size();
+        //join threads
+        for (auto& th : m_VecThreads)
+        {
+            if (th.joinable())
+                th.join();
+        }
+
+        //all threads joined
+        std::cout << vecSize << " threads joined" << "\n\n";
+        std::cout << "CSymbolTable size : " << symbols.size() << "\n\n";
+        std::cout << "CSymbolTable started to be destroyed! Goodbye!" << "\n\n";
+    };
 
     void insertItems()
     {
@@ -155,6 +176,19 @@ private:
         std::cout << std::endl;
     }
 
+    void DummyThreadTest(unsigned int iStart, unsigned int iEnd)
+    {
+        for (unsigned i = iStart; i < iEnd; i++)
+        {
+            std::string strVal("i");
+            strVal.append(std::to_string(i));
+
+            symbols.InsertValue(strVal, OpcUAObjectId::Integer , i);
+        }
+    }
+
+    protected:
+        std::vector<std::thread> m_VecThreads;  //threads into vector
 };
 
 class COpcServerSubscriptionTest
@@ -207,7 +241,7 @@ Symbols::CSymbolTable CSymbolTest::symbols;
 
 int main()
 {
-    CSymbolTest test;
+    CSymbolTest test;   //send a parameter for how many threads you want to work with
     COpcServerSubscriptionTest opcServerTest;
     //COpcClientSubscriptionTest opcClientTest;
     //CDatabaseSubscriptionTest databaseTest;
@@ -225,8 +259,6 @@ int main()
     transactionTest.assignEvents();
 
     test.updateItems();
-
-    std::cout << "\n\n" << "Exiting" << "\n\n";
 
     return 0;
 }

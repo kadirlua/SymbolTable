@@ -313,7 +313,7 @@ namespace Symbols {
                 }
                 else // if folder type add folder
                 {
-                    m->insert(std::make_pair(s, CSymbol(OpcUAObjectId::FolderType, treeMap())));
+                    m->insert(std::make_pair(s, CSymbol(OpcUAObjectId::FolderType, treeMap{})));
                     m = const_cast<treeMap*>(m->find(s)->second.get<treeMap>());
                 }
             }

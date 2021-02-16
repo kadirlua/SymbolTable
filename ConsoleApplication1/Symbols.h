@@ -23,6 +23,15 @@
 //   BaseArgs classes will evolve as we go
 //  *Added CSymbol.compare()
 //  *Added CSymbol.get()
+//  Version 1.4:
+//  *Added thread safe implementation for std::map
+//  *Events work properly now
+//  *Removed move semantic for CSymbolTable methods which do not make any sense.
+//  *Added some tests for transaction and thread safety.
+//  *Improved event args by inheritance
+//  *CSymbol::compare moved into cpp source file.
+//  *Some other improvements.
+
 
 #pragma once
 #include "object_ids.h"
@@ -272,7 +281,7 @@ namespace Symbols {
             events.erase(eventId);
         }
 
-        std::map<int, CSymbolEvent> events;
+        SymbolMap<int, CSymbolEvent> events;
 
     private:
         OpcUAObjectId m_objectId{ OpcUAObjectId::Null };

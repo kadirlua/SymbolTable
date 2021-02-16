@@ -17,68 +17,69 @@ namespace Symbols {
         typename Alloc = std::allocator<std::pair<const Key, T>>>
     class SymbolMap : public std::map<Key, T, Compare, Alloc>
     {
-        using iterator = typename std::map<Key, T, Compare, Alloc>::iterator ;
-        using const_iterator = typename std::map<Key, T, Compare, Alloc>::const_iterator ;
-        using key_type = typename std::map<Key, T, Compare, Alloc>::key_type;
-        using key_compare = typename std::map<Key, T, Compare, Alloc>::key_compare;
-        using allocator_type = typename std::map<Key, T, Compare, Alloc>::allocator_type;
-        using value_type = typename std::map<Key, T, Compare, Alloc>::value_type;
-        using mapped_type = typename std::map<Key, T, Compare, Alloc>::mapped_type;
-        using size_type = typename std::map<Key, T, Compare, Alloc>::size_type;
-        using map = typename std::map<Key, T, Compare, Alloc>::map;
+        using _Mybase = std::map<Key, T, Compare, Alloc>;
+        using iterator = typename _Mybase::iterator ;
+        using const_iterator = typename _Mybase::const_iterator ;
+        using key_type = typename _Mybase::key_type;
+        using key_compare = typename _Mybase::key_compare;
+        using allocator_type = typename _Mybase::allocator_type;
+        using value_type = typename _Mybase::value_type;
+        using mapped_type = typename _Mybase::mapped_type;
+        using size_type = typename _Mybase::size_type;
+        using map = typename _Mybase::map;
         using reference = value_type&;
         using const_reference = const value_type&;
     public:
 
-        explicit SymbolMap(const key_compare& comp = key_compare(), const allocator_type& alloc = allocator_type()) : std::map<Key, T, Compare, Alloc>(comp, alloc) {}
-        explicit SymbolMap(const allocator_type& alloc) : std::map<Key, T, Compare, Alloc>(alloc) {}
+        explicit SymbolMap(const key_compare& comp = key_compare(), const allocator_type& alloc = allocator_type()) : _Mybase(comp, alloc) {}
+        explicit SymbolMap(const allocator_type& alloc) : _Mybase(alloc) {}
         template <typename InputIterator> SymbolMap(InputIterator first,
             InputIterator last,
             const key_compare& comp = key_compare(),
-            const allocator_type& alloc = allocator_type()) : std::map<Key, T, Compare, Alloc>(first, last, comp, alloc) {}
-        SymbolMap(const map& x) : std::map<Key, T, Compare, Alloc>(x) {}
-        SymbolMap(const SymbolMap& x) : std::map<Key, T, Compare, Alloc>(x) {}
-        SymbolMap(const SymbolMap& x, const allocator_type& alloc) : std::map<Key, T, Compare, Alloc>(x, alloc) {}
-        SymbolMap(map&& x) : std::map<Key, T, Compare, Alloc>(std::move(x)) {}
-        SymbolMap(SymbolMap&& x) : std::map<Key, T, Compare, Alloc>(std::move(x)) {}
-        SymbolMap(map&& x, const allocator_type& alloc) : std::map<Key, T, Compare, Alloc>(std::move(x), alloc) {}
-        SymbolMap(SymbolMap&& x, const allocator_type& alloc) : std::map<Key, T, Compare, Alloc>(std::move(x), alloc) {}
+            const allocator_type& alloc = allocator_type()) : _Mybase(first, last, comp, alloc) {}
+        SymbolMap(const map& x) : _Mybase(x) {}
+        SymbolMap(const SymbolMap& x) : _Mybase(x) {}
+        SymbolMap(const SymbolMap& x, const allocator_type& alloc) : _Mybase(x, alloc) {}
+        SymbolMap(map&& x) : _Mybase(std::move(x)) {}
+        SymbolMap(SymbolMap&& x) : _Mybase(std::move(x)) {}
+        SymbolMap(map&& x, const allocator_type& alloc) : _Mybase(std::move(x), alloc) {}
+        SymbolMap(SymbolMap&& x, const allocator_type& alloc) : _Mybase(std::move(x), alloc) {}
         SymbolMap(std::initializer_list<value_type> il, const key_compare& comp = key_compare(), 
-            const allocator_type& alloc = allocator_type()) : std::map<Key, T, Compare, Alloc>(il, comp, alloc) {}
+            const allocator_type& alloc = allocator_type()) : _Mybase(il, comp, alloc) {}
 
         std::pair<iterator, bool> insert(const value_type& val)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::insert(val);
+            return _Mybase::insert(val);
         }
         //-----------------------------------------------------------------------------
         iterator insert(iterator position, const value_type& val)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::insert(position, val);
+            return _Mybase::insert(position, val);
         }
         //-----------------------------------------------------------------------------
         template <class InputIterator> void insert(InputIterator first, InputIterator last)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::insert(first, last);
+            return _Mybase::insert(first, last);
         }
 
         iterator find(const key_type& k)
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::find(k);
+            return _Mybase::find(k);
         }
         //-----------------------------------------------------------------------------
         const_iterator find(const key_type& k) const
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::find(k);
+            return _Mybase::find(k);
         }
 
         //-----------------------------------------------------------------------------
@@ -86,119 +87,124 @@ namespace Symbols {
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            std::map<Key, T, Compare, Alloc>::clear();
+            _Mybase::clear();
         }
 
         iterator erase(const_iterator position)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::erase(position);
+            return _Mybase::erase(position);
         }
         //-----------------------------------------------------------------------------
         size_type erase(const key_type& k)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::erase(k);
+            return _Mybase::erase(k);
         }
         //-----------------------------------------------------------------------------
         iterator erase(const_iterator first, const_iterator last)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::erase(first, last);
+            return _Mybase::erase(first, last);
         }
 
         SymbolMap<Key, T, Compare, Alloc>& operator= (const map& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::operator=(x);
+            _Mybase::operator=(x);
+            return *this;
         }
         //-----------------------------------------------------------------------------  
         SymbolMap<Key, T, Compare, Alloc>& operator= (const SymbolMap<Key, T, Compare, Alloc>& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::operator=(x);
+            _Mybase::operator=(x);
+            return *this;
         }
         //-----------------------------------------------------------------------------  
         SymbolMap<Key, T, Compare, Alloc>& operator= (map&& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::operator=(std::move(x));
+            _Mybase::operator=(std::move(x));
+            return *this;
         }
         //-----------------------------------------------------------------------------  
         SymbolMap<Key, T, Compare, Alloc>& operator= (SymbolMap<Key, T, Compare, Alloc>&& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::operator=(std::move(x));
+            _Mybase::operator=(std::move(x));
+            return *this;
         }
         //-----------------------------------------------------------------------------
         SymbolMap<Key, T, Compare, Alloc>& operator= (std::initializer_list<value_type> il)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::operator=(il);
+            _Mybase::operator=(il);
+            return *this;
         }
         //-----------------------------------------------------------------------------  
         bool empty() const noexcept
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::empty();
+            return _Mybase::empty();
         }
         //-----------------------------------------------------------------------------  
         size_type size() const noexcept
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::size();
+            return _Mybase::size();
         }
         //-----------------------------------------------------------------------------  
         mapped_type& operator[] (const key_type& k)
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::operator[](k);
+            return _Mybase::operator[](k);
         }
         //-----------------------------------------------------------------------------
         mapped_type& operator[] (key_type&& k)
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::operator[](std::move(k));
+            return _Mybase::operator[](std::move(k));
         }
         //-----------------------------------------------------------------------------
         mapped_type& at(const key_type& k)
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::at(k);
+            return _Mybase::at(k);
         }
         //-----------------------------------------------------------------------------
         const mapped_type& at(const key_type& k) const
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::at(k);
+            return _Mybase::at(k);
         }
 
         size_type count(const key_type& k) const
         {
             // A shared mutex is used to enable mutiple concurrent reads
             std::shared_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::count(k);
+            return _Mybase::count(k);
         }
 
         template <typename... Args> std::pair<iterator, bool> emplace(Args&&... args)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return std::map<Key, T, Compare, Alloc>::emplace(std::move(args...));
+            return _Mybase::emplace(std::move(args...));
         }
 
     private:

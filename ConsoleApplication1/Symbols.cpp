@@ -1,7 +1,7 @@
 // Symbols.cpp : implementation file
 // 
 // Symbols Interface for PLCiManagementConsole App
-// Version: 1.3
+// Version: 1.4
 // Date: February 2021
 // Authors: Kadir ALTINDAG, Suat ARICANLI
 // Email: kadir.altindag@aricanli.com.tr, suat@aricanli.com.tr
@@ -110,7 +110,7 @@ namespace Symbols {
 
             auto it = m->find(s);
             // substring not found? error
-            if (it == m->end())
+            if (it == m->cend())
             {
                 break;
             }

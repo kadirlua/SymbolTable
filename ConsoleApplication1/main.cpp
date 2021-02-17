@@ -236,6 +236,13 @@ public:
     }
 };
 
+//i cannot inherit from SymbolTable
+//class mySymbolTable : public Symbols::SymbolTable
+//{
+//public:
+//    mySymbolTable() = default;
+//    ~mySymbolTable() = default;
+//};
 
 Symbols::SymbolTable CSymbolTest::symbols;
 

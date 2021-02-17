@@ -18,8 +18,8 @@ namespace Symbols {
     class SymbolMap : public std::map<Key, T, Compare, Alloc>
     {
         using _Mybase = std::map<Key, T, Compare, Alloc>;
-        using iterator = typename _Mybase::iterator ;
-        using const_iterator = typename _Mybase::const_iterator ;
+        using iterator = typename _Mybase::iterator;
+        using const_iterator = typename _Mybase::const_iterator;
         using key_type = typename _Mybase::key_type;
         using key_compare = typename _Mybase::key_compare;
         using allocator_type = typename _Mybase::allocator_type;

@@ -295,7 +295,7 @@ namespace Symbols {
     *   One more thing, there should be something wrong with storing pointers, this class does not guaranteed
     *   to clean up pointer addresses. So be careful with dynamic memory allocations.
     */
-    class SymbolTable : public treeMap
+    class SymbolTable final : public treeMap
     {
     public:
         SymbolTable() = default;    //default constructor

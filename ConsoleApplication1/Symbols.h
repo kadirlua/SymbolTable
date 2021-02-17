@@ -158,7 +158,7 @@ namespace Symbols {
             m_eventId(eventId),
             m_type(type),
             m_fireType(fireType),
-            m_event(callback)
+            m_event(std::bind(callback, std::placeholders::_1))
         {
 
         }

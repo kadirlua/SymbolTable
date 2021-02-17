@@ -204,10 +204,17 @@ public:
                 0, 
                 Symbols::SymbolEvent::EventType::et_OpcServer, 
                 Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
-                std::bind(&UpdateCallback, std::placeholders::_1)
+                &UpdateCallback
             ));
-        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, Symbols::SymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
-        CSymbolTest::symbols.AddEvent("f", Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, Symbols::SymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("folder1.d", 
+            Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, 
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
+                &UpdateCallback));
+
+        CSymbolTest::symbols.AddEvent("f", 
+            Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, 
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
+                &UpdateCallback));
     }
 };
 
@@ -225,14 +232,17 @@ public:
                 15,
                 Symbols::SymbolEvent::EventType::et_Transaction,
                 Symbols::SymbolEvent::EventFireType::eft_AnyChange,
-                std::bind(&UpdateCallback, std::placeholders::_1)
+                &UpdateCallback
             ));
-        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::SymbolEvent(5, 
-            Symbols::SymbolEvent::EventType::et_Transaction, Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
-            std::bind(&UpdateCallback, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("folder1.d", 
+            Symbols::SymbolEvent(5, Symbols::SymbolEvent::EventType::et_Transaction, 
+            Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
+            &UpdateCallback));
 
-        CSymbolTest::symbols.AddEvent("f", Symbols::SymbolEvent(2, Symbols::SymbolEvent::EventType::et_Transaction, 
-            Symbols::SymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("f", 
+            Symbols::SymbolEvent(2, Symbols::SymbolEvent::EventType::et_Transaction, 
+            Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
+            &UpdateCallback));
     }
 };
 

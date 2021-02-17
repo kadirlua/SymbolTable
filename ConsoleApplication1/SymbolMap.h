@@ -5,7 +5,7 @@
 
 namespace Symbols {
 
-    class CSymbol;  //incomplete type declaration
+    class Symbol;  //incomplete type declaration
 
     /*  
     *   SymbolMap is a thread safe implementation of std::map.
@@ -212,5 +212,5 @@ namespace Symbols {
     };
 
     //our map to hold whole datas
-    using treeMap = SymbolMap<std::string, CSymbol>;    //sortable map class
+    using treeMap = SymbolMap<std::string, Symbol>;    //sortable map class
 }

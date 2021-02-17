@@ -12,8 +12,8 @@
 
 namespace Symbols {
 
-    CSymbolEvent::EventFireType CSymbol::compare(const std::any& value) const {
-        CSymbolEvent::EventFireType result{ CSymbolEvent::EventFireType::eft_None };
+    SymbolEvent::EventFireType Symbol::compare(const std::any& value) const {
+        SymbolEvent::EventFireType result{ SymbolEvent::EventFireType::eft_None };
         switch (m_objectId)
         {
         case OpcUAObjectId::Null:
@@ -24,11 +24,11 @@ namespace Symbols {
             const auto& b = *get<bool>();
             auto comp = std::any_cast<bool>(value);
             if (comp > b)
-                result = CSymbolEvent::EventFireType::eft_Increase;
+                result = SymbolEvent::EventFireType::eft_Increase;
             else if (comp < b)
-                result = CSymbolEvent::EventFireType::eft_Decrease;
+                result = SymbolEvent::EventFireType::eft_Decrease;
             else
-                result = CSymbolEvent::EventFireType::eft_None;
+                result = SymbolEvent::EventFireType::eft_None;
         }
         break;
 
@@ -37,11 +37,11 @@ namespace Symbols {
             const auto& f = *get<float>();
             auto comp = std::any_cast<float>(value);
             if (comp > f)
-                result = CSymbolEvent::EventFireType::eft_Increase;
+                result = SymbolEvent::EventFireType::eft_Increase;
             else if (comp < f)
-                result = CSymbolEvent::EventFireType::eft_Decrease;
+                result = SymbolEvent::EventFireType::eft_Decrease;
             else
-                result = CSymbolEvent::EventFireType::eft_None;
+                result = SymbolEvent::EventFireType::eft_None;
         }
         break;
 
@@ -50,11 +50,11 @@ namespace Symbols {
             const auto& d = *get<double>();
             auto comp = std::any_cast<double>(value);
             if (comp > d)
-                result = CSymbolEvent::EventFireType::eft_Increase;
+                result = SymbolEvent::EventFireType::eft_Increase;
             else if (comp < d)
-                result = CSymbolEvent::EventFireType::eft_Decrease;
+                result = SymbolEvent::EventFireType::eft_Decrease;
             else
-                result = CSymbolEvent::EventFireType::eft_None;
+                result = SymbolEvent::EventFireType::eft_None;
         }
         break;
 
@@ -63,11 +63,11 @@ namespace Symbols {
             const auto& s = *get<std::string>();
             auto comp = std::any_cast<std::string>(value);
             if (comp > s)
-                result = CSymbolEvent::EventFireType::eft_Increase;
+                result = SymbolEvent::EventFireType::eft_Increase;
             else if (comp < s)
-                result = CSymbolEvent::EventFireType::eft_Decrease;
+                result = SymbolEvent::EventFireType::eft_Decrease;
             else
-                result = CSymbolEvent::EventFireType::eft_None;
+                result = SymbolEvent::EventFireType::eft_None;
         }
         break;
 
@@ -76,11 +76,11 @@ namespace Symbols {
             const auto& i = *get<int>();
             auto comp = std::any_cast<int>(value);
             if (comp > i)
-                result = CSymbolEvent::EventFireType::eft_Increase;
+                result = SymbolEvent::EventFireType::eft_Increase;
             else if (comp < i)
-                result = CSymbolEvent::EventFireType::eft_Decrease;
+                result = SymbolEvent::EventFireType::eft_Decrease;
             else
-                result = CSymbolEvent::EventFireType::eft_None;
+                result = SymbolEvent::EventFireType::eft_None;
         }
         break;
 
@@ -88,10 +88,10 @@ namespace Symbols {
         return result;
     }
 
-    CSymbol CSymbolTable::GetValue(std::string name) const
+    Symbol SymbolTable::GetValue(std::string name) const
     {
         //copy elision for name should work for c++ 17
-        CSymbol bRet;
+        Symbol bRet;
 
         bool lastSubs = false;
         const treeMap* m = this;
@@ -99,7 +99,7 @@ namespace Symbols {
         std::string s;
 
         if (name.length() == 0)
-            return CSymbol(OpcUAObjectId::FolderType, m);
+            return Symbol(OpcUAObjectId::FolderType, m);
 
         // split name into substrings and search
         while (getline(f, s, '.'))
@@ -139,7 +139,7 @@ namespace Symbols {
         return bRet;
     }
 
-    bool CSymbolTable::AddEvent(std::string name, Symbols::CSymbolEvent symbolEvent)
+    bool SymbolTable::AddEvent(std::string name, Symbols::SymbolEvent symbolEvent)
     {
         //copy elision for name should work for c++ 17
         bool bRet = true;
@@ -192,7 +192,7 @@ namespace Symbols {
         return bRet;
     }
 
-    bool CSymbolTable::SetValue(std::string name, std::any value)
+    bool SymbolTable::SetValue(std::string name, std::any value)
     {
         //copy elision for name should work for c++ 17
         bool bRet = true;
@@ -226,39 +226,39 @@ namespace Symbols {
                     const std::any& oldVal = it->second.get();
 
                     // 2: determine how the value changed
-                    Symbols::CSymbolEvent::EventFireType theChange = it->second.compare(value);
+                    Symbols::SymbolEvent::EventFireType theChange = it->second.compare(value);
 
                     // 3: update with new value
                     it->second.set(value);
 
-                    if (theChange != Symbols::CSymbolEvent::EventFireType::eft_None)
+                    if (theChange != Symbols::SymbolEvent::EventFireType::eft_None)
                     {
                         for (auto itm = it->second.events.begin(); itm != it->second.events.end(); itm++)
                         {
-                            // 4: SATISFY Symbols::CSymbolEvent::EventFireType
-                            if (itm->second.getEventFireType() != Symbols::CSymbolEvent::EventFireType::eft_AnyChange &&
+                            // 4: SATISFY Symbols::SymbolEvent::EventFireType
+                            if (itm->second.getEventFireType() != Symbols::SymbolEvent::EventFireType::eft_AnyChange &&
                                 itm->second.getEventFireType() != theChange)
                                 continue;
 
                             // 5: construct arguments for specified event type and fire event
-                            if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_OpcServer)
+                            if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcServer)
                             {
-                                Symbols::CSymbolEvent::OpcServerArgs arg(name, it->second.getObjectId(), oldVal, value);
+                                Symbols::SymbolEvent::OpcServerArgs arg(name, it->second.getObjectId(), oldVal, value);
                                 itm->second.m_event(&arg);
                             }
-                            else if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_OpcClient)
+                            else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcClient)
                             {
-                                Symbols::CSymbolEvent::OpcClientArgs arg(name, it->second.getObjectId(), oldVal, value);
+                                Symbols::SymbolEvent::OpcClientArgs arg(name, it->second.getObjectId(), oldVal, value);
                                 itm->second.m_event(&arg);
                             }
-                            else if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_Database)
+                            else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Database)
                             {
-                                Symbols::CSymbolEvent::DatabaseArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
+                                Symbols::SymbolEvent::DatabaseArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
                                 itm->second.m_event(&arg);
                             }
-                            else if (itm->second.getEventType() == Symbols::CSymbolEvent::EventType::et_Transaction)
+                            else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Transaction)
                             {
-                                Symbols::CSymbolEvent::TransactionArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
+                                Symbols::SymbolEvent::TransactionArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
                                 itm->second.m_event(&arg);
                             }
                         }
@@ -283,7 +283,7 @@ namespace Symbols {
         return bRet;
     }
 
-    bool CSymbolTable::InsertValue(std::string name, OpcUAObjectId oId, std::any value)
+    bool SymbolTable::InsertValue(std::string name, OpcUAObjectId oId, std::any value)
     {
         //copy elision for name should work for c++ 17
         bool bRet = true;
@@ -309,11 +309,11 @@ namespace Symbols {
                 // if base variable type add variable
                 if (lastSubs && oId != OpcUAObjectId::FolderType)
                 {
-                    m->insert(std::make_pair(s, CSymbol(oId, value)));
+                    m->insert(std::make_pair(s, Symbol(oId, value)));
                 }
                 else // if folder type add folder
                 {
-                    m->insert(std::make_pair(s, CSymbol(OpcUAObjectId::FolderType, treeMap{})));
+                    m->insert(std::make_pair(s, Symbol(OpcUAObjectId::FolderType, treeMap{})));
                     m = const_cast<treeMap*>(m->find(s)->second.get<treeMap>());
                 }
             }
@@ -352,7 +352,7 @@ namespace Symbols {
         return bRet;
     }
 
-    bool CSymbolTable::DeleteValue(std::string name)
+    bool SymbolTable::DeleteValue(std::string name)
     {
         //copy elision for name should work for c++ 17
         bool bRet = true;

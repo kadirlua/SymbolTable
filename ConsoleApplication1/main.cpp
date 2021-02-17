@@ -6,9 +6,9 @@
 
 //Should be only one instance
 //TODO: Improve for thread safety
-static inline void UpdateCallback(Symbols::CSymbolEvent::BaseArgs* args)
+static inline void UpdateCallback(Symbols::SymbolEvent::BaseArgs* args)
 {
-    if (auto e = dynamic_cast<Symbols::CSymbolEvent::OpcServerArgs*>(args); e) {    //if a type of OpcServerArgs...
+    if (auto e = dynamic_cast<Symbols::SymbolEvent::OpcServerArgs*>(args); e) {    //if a type of OpcServerArgs...
         std::cout << "OpcServer event UpdateCallback: the value of '" << e->m_symbolName << "' ";
         if (e->m_symbolName == std::string("folder1.folder1a.folder1a1.i"))
             std::cout << "became: " << std::any_cast<int>(*e->m_newVal) << std::endl;
@@ -19,7 +19,7 @@ static inline void UpdateCallback(Symbols::CSymbolEvent::BaseArgs* args)
         else
             std::cout << " is unsolicited." << std::endl;
     }
-    else if (auto e = dynamic_cast<Symbols::CSymbolEvent::TransactionArgs*>(args); e) {    //if a type of TransactionArgs...
+    else if (auto e = dynamic_cast<Symbols::SymbolEvent::TransactionArgs*>(args); e) {    //if a type of TransactionArgs...
         std::cout << "The id " << e->m_deviceTransactionId << " of transaction event UpdateCallback: the value of '" << e->m_symbolName << "' ";
         if (e->m_symbolName == std::string("folder1.folder1a.folder1a1.i"))
             std::cout << "became: " << std::any_cast<int>(*e->m_newVal) << std::endl;
@@ -55,8 +55,8 @@ public:
 
         //all threads joined
         std::cout << vecSize << " threads joined" << "\n\n";
-        std::cout << "CSymbolTable size : " << symbols.size() << "\n\n";
-        std::cout << "CSymbolTable started to be destroyed! Goodbye!" << "\n\n";
+        std::cout << "SymbolTable size : " << symbols.size() << "\n\n";
+        std::cout << "SymbolTable started to be destroyed! Goodbye!" << "\n\n";
     };
 
     void insertItems()
@@ -134,10 +134,10 @@ public:
 
     }
 
-    static Symbols::CSymbolTable symbols;
+    static Symbols::SymbolTable symbols;
 
 private:
-    void displayValue(std::string path, const Symbols::CSymbol& val)
+    void displayValue(std::string path, const Symbols::Symbol& val)
     {
         std::cout << "the value of '" << path << "' is: ";
 
@@ -200,14 +200,14 @@ public:
     void assignEvents()
     {
         CSymbolTest::symbols.AddEvent("folder1.folder1a.folder1a1.i",
-                Symbols::CSymbolEvent(
+                Symbols::SymbolEvent(
                 0, 
-                Symbols::CSymbolEvent::EventType::et_OpcServer, 
-                Symbols::CSymbolEvent::EventFireType::eft_AnyChange, 
+                Symbols::SymbolEvent::EventType::et_OpcServer, 
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
                 std::bind(&UpdateCallback, std::placeholders::_1)
             ));
-        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::CSymbolEvent(0, Symbols::CSymbolEvent::EventType::et_OpcServer, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
-        CSymbolTest::symbols.AddEvent("f", Symbols::CSymbolEvent(0, Symbols::CSymbolEvent::EventType::et_OpcServer, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, Symbols::SymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("f", Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, Symbols::SymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
     }
 };
 
@@ -221,23 +221,23 @@ public:
     void assignEvents()
     {
         CSymbolTest::symbols.AddEvent("folder1.folder1a.folder1a1.i",
-            Symbols::CSymbolEvent(
+            Symbols::SymbolEvent(
                 15,
-                Symbols::CSymbolEvent::EventType::et_Transaction,
-                Symbols::CSymbolEvent::EventFireType::eft_AnyChange,
+                Symbols::SymbolEvent::EventType::et_Transaction,
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange,
                 std::bind(&UpdateCallback, std::placeholders::_1)
             ));
-        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::CSymbolEvent(5, 
-            Symbols::CSymbolEvent::EventType::et_Transaction, Symbols::CSymbolEvent::EventFireType::eft_AnyChange, 
+        CSymbolTest::symbols.AddEvent("folder1.d", Symbols::SymbolEvent(5, 
+            Symbols::SymbolEvent::EventType::et_Transaction, Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
             std::bind(&UpdateCallback, std::placeholders::_1)));
 
-        CSymbolTest::symbols.AddEvent("f", Symbols::CSymbolEvent(2, Symbols::CSymbolEvent::EventType::et_Transaction, 
-            Symbols::CSymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
+        CSymbolTest::symbols.AddEvent("f", Symbols::SymbolEvent(2, Symbols::SymbolEvent::EventType::et_Transaction, 
+            Symbols::SymbolEvent::EventFireType::eft_AnyChange, std::bind(&UpdateCallback, std::placeholders::_1)));
     }
 };
 
 
-Symbols::CSymbolTable CSymbolTest::symbols;
+Symbols::SymbolTable CSymbolTest::symbols;
 
 int main()
 {

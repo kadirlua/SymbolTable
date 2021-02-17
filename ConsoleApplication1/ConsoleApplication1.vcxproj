@@ -147,6 +147,7 @@
     <ClCompile Include="Symbols.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SymbolMap.h" />
     <ClInclude Include="Symbols.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -26,5 +26,8 @@
     <ClInclude Include="Symbols.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SymbolMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

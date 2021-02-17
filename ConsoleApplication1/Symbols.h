@@ -18,23 +18,30 @@
 //  *Removed type parameter from method SetValue. Set value does not create anymore.
 //  *Added methods InsertValue and DeleteValue. SetValue no longer inserts a symbol.
 //  *GetValue now returns root folder if parameter is empty string
-//  *Added CSymbolEvent class, and CSymbol events map. Each Symbol may be assigned one or more events.
+//  *Added SymbolEvent class, and Symbol events map. Each Symbol may be assigned one or more events.
 //   Event parameter defined as void*, may be one of ????BaseArgs classes
 //   BaseArgs classes will evolve as we go
-//  *Added CSymbol.compare()
-//  *Added CSymbol.get()
+//  *Added Symbol.compare()
+//  *Added Symbol.get()
+//  Version 1.4:
+//  *Added thread safe implementation for std::map
+//  *Events work properly now
+//  *Removed move semantic for SymbolTable methods which do not make any sense.
+//  *Added some tests for transaction and thread safety.
+//  *Improved event args by inheritance
+//  *Symbol::compare moved into cpp source file.
+//  *Some other improvements.
+
 
 #pragma once
 #include "object_ids.h"
 #include <any>
 #include <functional>
-#include <string>
-#include <map>
-//#include <unordered_map>    //if you do not want to sortable map, uncomment this line.
+#include "SymbolMap.h"
 
 namespace Symbols {
 
-    class CSymbolEvent
+    class SymbolEvent
     {
     public:
         enum class EventType {
@@ -142,12 +149,12 @@ namespace Symbols {
             int m_deviceTransactionId{};
         };
 
-        using SymbolEvent = std::function<void(BaseArgs*)>;
+        using symbol_event_t = std::function<void(BaseArgs*)>;
 
     public:
-        CSymbolEvent() = default;   //default constructor
-        ~CSymbolEvent() = default;  //destructor
-        CSymbolEvent(int eventId, EventType type, EventFireType fireType, const SymbolEvent& callback) :
+        SymbolEvent() = default;   //default constructor
+        ~SymbolEvent() = default;  //destructor
+        SymbolEvent(int eventId, EventType type, EventFireType fireType, const symbol_event_t& callback) :
             m_eventId(eventId),
             m_type(type),
             m_fireType(fireType),
@@ -168,7 +175,7 @@ namespace Symbols {
             return m_fireType;
         }
 
-        SymbolEvent m_event;
+        symbol_event_t m_event;
 
     private:
         int m_eventId = 0;
@@ -183,26 +190,26 @@ namespace Symbols {
     *   TODO: improve this class with a return type which is uncertain.
     */
 
-    class CSymbol {
+    class Symbol {
     public:
-        CSymbol() = default;   //default constructor
-        ~CSymbol() = default;  //destructor
+        Symbol() = default;   //default constructor
+        ~Symbol() = default;  //destructor
 
         /*
         *   if you want to noncopyable, just uncomment
         *   but it probably should not work.
         */
-        /*CSymbol(const CSymbol& r) = delete;
-        CSymbol& operator=(const CSymbol& r) = delete;*/
+        /*Symbol(const Symbol& r) = delete;
+        Symbol& operator=(const Symbol& r) = delete;*/
 
-        CSymbol(OpcUAObjectId id, const std::any& val) :
+        Symbol(OpcUAObjectId id, const std::any& val) :
             m_objectId(id),
             m_value(val)
         {
 
         }
 
-        CSymbol(OpcUAObjectId id, std::any&& val) :
+        Symbol(OpcUAObjectId id, std::any&& val) :
             m_objectId(id),
             m_value(std::move(val))
         {
@@ -254,7 +261,7 @@ namespace Symbols {
         *   compare a value with this one.
         *   returns if there was a change and then if it increased or decreased.
         */
-        CSymbolEvent::EventFireType compare(const std::any& value) const;
+        SymbolEvent::EventFireType compare(const std::any& value) const;
 
         /*
         *   get the type of the object we stored in any.
@@ -264,7 +271,7 @@ namespace Symbols {
             return m_objectId;
         }
 
-        void addEvent(int eventId, CSymbolEvent symbolEvent)
+        void addEvent(int eventId, SymbolEvent symbolEvent)
         {
             events.insert(std::make_pair(eventId, symbolEvent));
         }
@@ -274,7 +281,7 @@ namespace Symbols {
             events.erase(eventId);
         }
 
-        std::map<int, CSymbolEvent> events;
+        SymbolMap<int, SymbolEvent> events;
 
     private:
         OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
@@ -282,25 +289,21 @@ namespace Symbols {
 
     };
 
-    //our map to hold whole datas
-    using treeMap = std::map<std::string, CSymbol>;    //sortable map class
-    //using treeMap = std::unordered_map<std::string, CSymbol>;    //do not want this for now
-
     /*
     *   Symbol table class to hold symbol data which is set of unknown variables.
     *   You can set value of an object any time you want but it erases the old one if contains any.
     *   One more thing, there should be something wrong with storing pointers, this class does not guaranteed
     *   to clean up pointer addresses. So be careful with dynamic memory allocations.
     */
-    class CSymbolTable : public treeMap
+    class SymbolTable final : public treeMap
     {
     public:
-        CSymbolTable() = default;    //default constructor
-        ~CSymbolTable() = default;   //destructor
+        SymbolTable() = default;    //default constructor
+        ~SymbolTable() = default;   //destructor
 
-        //noncopyable CSymbolTable interface
-        CSymbolTable(const CSymbolTable& r) = delete;
-        CSymbolTable& operator=(const CSymbolTable& r) = delete;
+        //noncopyable SymbolTable interface
+        SymbolTable(const SymbolTable& r) = delete;
+        SymbolTable& operator=(const SymbolTable& r) = delete;
 
     public:
         /*
@@ -309,7 +312,7 @@ namespace Symbols {
         *   name: given name which is key of map.
         *   Returns: returns value of map entry, otherwise empty class.
         */
-        CSymbol GetValue(std::string name) const;
+        Symbol GetValue(std::string name) const;
 
         /*
         *   Set value of a given name symbol instance.
@@ -324,10 +327,10 @@ namespace Symbols {
         *   Add an event to a given name symbol instance.
         *   Params:
         *   name: given name which is key of map.
-        *   symbolEvent: a Symbols::CSymbolEvent instance.
+        *   symbolEvent: a Symbols::SymbolEvent instance.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool AddEvent(std::string name, Symbols::CSymbolEvent symbolEvent);
+        bool AddEvent(std::string name, Symbols::SymbolEvent symbolEvent);
 
         /*
         *   Insert a value of a given name symbol instance.

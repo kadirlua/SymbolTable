@@ -134,6 +134,11 @@ public:
 
     }
 
+    std::vector<unsigned char> SerializeXML()
+    {
+        return symbols.SerializeXML();
+    }
+
     static Symbols::SymbolTable symbols;
 
 private:
@@ -276,6 +281,11 @@ int main()
     transactionTest.assignEvents();
 
     test.updateItems();
+    std::cout << "\n\n\n";
+
+    std::vector<unsigned char> input = test.SerializeXML();
+    std::string s(input.begin(), input.end());
+    std::cout << s << "\n\n\n";
 
     return 0;
 }

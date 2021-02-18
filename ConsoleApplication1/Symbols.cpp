@@ -402,4 +402,76 @@ namespace Symbols {
         }
         return bRet;
     }
+
+    std::vector<unsigned char> SymbolTable::SerializeXML()
+    {
+        tinyxml2::XMLDocument* doc = NULL;
+        tinyxml2::XMLElement* root = NULL, * pElm = NULL;
+        //TiXmlElement* root = NULL, * page = NULL, * pElms = NULL, * pElm = NULL, * pDeclDsrc = NULL, * pDsrcs = NULL, * pDsrc = NULL, * pGrp = NULL, * pdDict = NULL, * pdDictItem = NULL;
+        std::vector<unsigned char> charVec;
+        treeMap* m = this;
+
+        doc = new tinyxml2::XMLDocument();
+        tinyxml2::XMLNode* pRoot = doc->NewElement("symboltable");
+        doc->InsertFirstChild(pRoot);
+
+        auto it = m->begin();
+        for (it = m->begin(); it != m->end(); it++)
+        {
+            if (it->second.getObjectId() == OpcUAObjectId::FolderType)
+            {
+                pElm = doc->NewElement("folder");
+                pElm->SetAttribute("name", it->first.c_str());
+                recurseFolders(it->second.get<treeMap>(), doc, pElm);
+                pRoot->LinkEndChild(pElm);
+            }
+            else
+            {
+                pElm = doc->NewElement("symbol");
+                pElm->SetAttribute("name", it->first.c_str());
+                pElm->SetAttribute("type", (int)it->second.getObjectId());
+                pRoot->LinkEndChild(pElm);
+            }
+        }
+
+        #pragma region - Print
+        tinyxml2::XMLPrinter printer;
+        doc->Accept(&printer);
+
+        const char* chIn = printer.CStr();
+
+        const char* end = chIn + strlen(chIn);
+
+        charVec.clear();
+        charVec.insert(charVec.end(), chIn, end);
+        #pragma endregion
+
+        delete doc;
+
+        return charVec;
+    }
+
+    void SymbolTable::recurseFolders(const treeMap* m, tinyxml2::XMLDocument* doc, tinyxml2::XMLNode* pNode)
+    {
+        tinyxml2::XMLElement* pElm;
+
+        auto it = m->begin();
+        for (it = m->begin(); it != m->end(); it++)
+        {
+            if (it->second.getObjectId() == OpcUAObjectId::FolderType)
+            {
+                pElm = doc->NewElement("folder");
+                pElm->SetAttribute("name", it->first.c_str());
+                recurseFolders(it->second.get<treeMap>(), doc, pElm);
+                pNode->LinkEndChild(pElm);
+            }
+            else
+            {
+                pElm = doc->NewElement("symbol");
+                pElm->SetAttribute("name", it->first.c_str());
+                pElm->SetAttribute("type", (int)it->second.getObjectId());
+                pNode->LinkEndChild(pElm);
+            }
+        }
+    }
 }

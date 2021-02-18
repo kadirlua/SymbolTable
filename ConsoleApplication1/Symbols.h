@@ -31,6 +31,8 @@
 //  *Improved event args by inheritance
 //  *Symbol::compare moved into cpp source file.
 //  *Some other improvements.
+//  Version 1.5:
+//  *Added SymbolTable::SerializeXML() returns vector of unsigned char.
 
 
 #pragma once
@@ -38,6 +40,7 @@
 #include <any>
 #include <functional>
 #include "SymbolMap.h"
+#include "tinyxml2.h"
 
 namespace Symbols {
 
@@ -349,5 +352,16 @@ namespace Symbols {
         *   Returns: returns true if successful, otherwise false.
         */
         bool DeleteValue(std::string name);
+
+        /*
+        *   Serialize the symbol table to XML.
+        *   Params: None
+        *   Returns: std::vector<unsigned char> containing the XML.
+        */
+        std::vector<unsigned char> SerializeXML();
+
+    private:
+        void recurseFolders(const treeMap* folder, tinyxml2::XMLDocument* doc, tinyxml2::XMLNode* pNode);
+
     };
 }

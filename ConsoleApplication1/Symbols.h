@@ -300,6 +300,12 @@ namespace Symbols {
     */
     class SymbolTable final : public treeMap
     {
+        static inline constexpr auto XML_ELEMENT_SYMBOLTABLE = "symboltable";
+        static inline constexpr auto XML_ELEMENT_FOLDER = "folder";
+        static inline constexpr auto XML_ELEMENT_SYMBOL = "symbol";
+        static inline constexpr auto XML_ELEMENT_NAME = "name";
+        static inline constexpr auto XML_ELEMENT_TYPE = "type";
+
     public:
         SymbolTable() = default;    //default constructor
         ~SymbolTable() = default;   //destructor
@@ -358,10 +364,11 @@ namespace Symbols {
         *   Params: None
         *   Returns: std::vector<unsigned char> containing the XML.
         */
-        std::vector<unsigned char> SerializeXML();
+        std::vector<unsigned char> SerializeXML() const;
 
     private:
-        void recurseFolders(const treeMap* folder, tinyxml2::XMLDocument* doc, tinyxml2::XMLNode* pNode);
+        void recurseFolders(const treeMap* folder, const std::unique_ptr<tinyxml2::XMLDocument>& doc, 
+            tinyxml2::XMLNode* pNode) const;
 
     };
 }

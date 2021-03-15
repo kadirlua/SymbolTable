@@ -39,10 +39,15 @@
 #include "object_ids.h"
 #include <any>
 #include <functional>
-#include "SymbolMap.h"
+#include "ThreadSafeMap.h"
 #include "tinyxml2.h"
 
 namespace Symbols {
+
+    class Symbol;   //incomplete type declaration
+
+    //our map to hold whole datas
+    using treeMap = aricanli::container::ThreadSafeMap<std::string, Symbol>;    //sortable map class
 
     class SymbolEvent
     {
@@ -284,7 +289,7 @@ namespace Symbols {
             events.erase(eventId);
         }
 
-        SymbolMap<int, SymbolEvent> events;
+        aricanli::container::ThreadSafeMap<int, SymbolEvent> events;
 
     private:
         OpcUAObjectId m_objectId{ OpcUAObjectId::Null };

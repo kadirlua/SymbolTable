@@ -29,7 +29,7 @@
     <ClInclude Include="Symbols.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SymbolMap.h">
+    <ClInclude Include="ThreadSafeMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tinyxml2.h">

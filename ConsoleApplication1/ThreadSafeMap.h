@@ -1,21 +1,18 @@
 #pragma once
 #include <map>
-#include <string>
 #include <shared_mutex>
 
-namespace Symbols {
-
-    class Symbol;  //incomplete type declaration
+namespace aricanli::container {
 
     /*  
-    *   SymbolMap is a thread safe implementation of std::map.
+    *   ThreadSafeMap is a thread safe implementation of std::map.
     *   It works with multiple threads at the same time reading or writing into map.
     */
     template<typename Key,
         typename T,
         typename Compare = std::less<Key>,
         typename Alloc = std::allocator<std::pair<const Key, T>>>
-    class SymbolMap : public std::map<Key, T, Compare, Alloc>
+    class ThreadSafeMap : public std::map<Key, T, Compare, Alloc>
     {
         using _Mybase = std::map<Key, T, Compare, Alloc>;
         using iterator = typename _Mybase::iterator;
@@ -31,20 +28,20 @@ namespace Symbols {
         using const_reference = const value_type&;
     public:
 
-        explicit SymbolMap(const key_compare& comp = key_compare(), const allocator_type& alloc = allocator_type()) : _Mybase(comp, alloc) {}
-        explicit SymbolMap(const allocator_type& alloc) : _Mybase(alloc) {}
-        template <typename InputIterator> SymbolMap(InputIterator first,
+        explicit ThreadSafeMap(const key_compare& comp = key_compare(), const allocator_type& alloc = allocator_type()) : _Mybase(comp, alloc) {}
+        explicit ThreadSafeMap(const allocator_type& alloc) : _Mybase(alloc) {}
+        template <typename InputIterator> ThreadSafeMap(InputIterator first,
             InputIterator last,
             const key_compare& comp = key_compare(),
             const allocator_type& alloc = allocator_type()) : _Mybase(first, last, comp, alloc) {}
-        SymbolMap(const map& x) : _Mybase(x) {}
-        SymbolMap(const SymbolMap& x) : _Mybase(x) {}
-        SymbolMap(const SymbolMap& x, const allocator_type& alloc) : _Mybase(x, alloc) {}
-        SymbolMap(map&& x) : _Mybase(std::move(x)) {}
-        SymbolMap(SymbolMap&& x) : _Mybase(std::move(x)) {}
-        SymbolMap(map&& x, const allocator_type& alloc) : _Mybase(std::move(x), alloc) {}
-        SymbolMap(SymbolMap&& x, const allocator_type& alloc) : _Mybase(std::move(x), alloc) {}
-        SymbolMap(std::initializer_list<value_type> il, const key_compare& comp = key_compare(), 
+        ThreadSafeMap(const map& x) : _Mybase(x) {}
+        ThreadSafeMap(const ThreadSafeMap& x) : _Mybase(x) {}
+        ThreadSafeMap(const ThreadSafeMap& x, const allocator_type& alloc) : _Mybase(x, alloc) {}
+        ThreadSafeMap(map&& x) : _Mybase(std::move(x)) {}
+        ThreadSafeMap(ThreadSafeMap&& x) : _Mybase(std::move(x)) {}
+        ThreadSafeMap(map&& x, const allocator_type& alloc) : _Mybase(std::move(x), alloc) {}
+        ThreadSafeMap(ThreadSafeMap&& x, const allocator_type& alloc) : _Mybase(std::move(x), alloc) {}
+        ThreadSafeMap(std::initializer_list<value_type> il, const key_compare& comp = key_compare(), 
             const allocator_type& alloc = allocator_type()) : _Mybase(il, comp, alloc) {}
 
         std::pair<iterator, bool> insert(const value_type& val)
@@ -111,7 +108,7 @@ namespace Symbols {
             return _Mybase::erase(first, last);
         }
 
-        SymbolMap<Key, T, Compare, Alloc>& operator= (const map& x)
+        ThreadSafeMap<Key, T, Compare, Alloc>& operator= (const map& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -119,7 +116,7 @@ namespace Symbols {
             return *this;
         }
         //-----------------------------------------------------------------------------  
-        SymbolMap<Key, T, Compare, Alloc>& operator= (const SymbolMap<Key, T, Compare, Alloc>& x)
+        ThreadSafeMap<Key, T, Compare, Alloc>& operator= (const ThreadSafeMap<Key, T, Compare, Alloc>& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -127,7 +124,7 @@ namespace Symbols {
             return *this;
         }
         //-----------------------------------------------------------------------------  
-        SymbolMap<Key, T, Compare, Alloc>& operator= (map&& x)
+        ThreadSafeMap<Key, T, Compare, Alloc>& operator= (map&& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -135,7 +132,7 @@ namespace Symbols {
             return *this;
         }
         //-----------------------------------------------------------------------------  
-        SymbolMap<Key, T, Compare, Alloc>& operator= (SymbolMap<Key, T, Compare, Alloc>&& x)
+        ThreadSafeMap<Key, T, Compare, Alloc>& operator= (ThreadSafeMap<Key, T, Compare, Alloc>&& x)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -143,7 +140,7 @@ namespace Symbols {
             return *this;
         }
         //-----------------------------------------------------------------------------
-        SymbolMap<Key, T, Compare, Alloc>& operator= (std::initializer_list<value_type> il)
+        ThreadSafeMap<Key, T, Compare, Alloc>& operator= (std::initializer_list<value_type> il)
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -210,7 +207,4 @@ namespace Symbols {
     private:
         mutable std::shared_mutex mutex_; //The mutex for this map
     };
-
-    //our map to hold whole datas
-    using treeMap = SymbolMap<std::string, Symbol>;    //sortable map class
 }

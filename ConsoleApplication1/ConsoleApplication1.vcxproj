@@ -148,7 +148,6 @@
     <ClCompile Include="tinyxml2.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="object_ids.h" />
     <ClInclude Include="ThreadSafeMap.h" />
     <ClInclude Include="Symbols.h" />
     <ClInclude Include="tinyxml2.h" />

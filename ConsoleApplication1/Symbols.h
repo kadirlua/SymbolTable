@@ -36,18 +36,50 @@
 
 
 #pragma once
-#include "object_ids.h"
 #include <any>
 #include <functional>
 #include "ThreadSafeMap.h"
 #include "tinyxml2.h"
 
 namespace Symbols {
+    enum class SymbolType {
+        st_Null = 0,
+        st_Boolean = 1,
+        st_SByte = 2,
+        st_Byte = 3,
+        st_Int16 = 4,
+        st_UInt16 = 5,
+        st_Int32 = 6,
+        st_UInt32 = 7,
+        st_Int64 = 8,
+        st_UInt64 = 9,
+        st_Float = 10,
+        st_Double = 11,
+        st_String = 12,
+        st_DateTime = 13,
+        st_Guid = 14,
+        //ByteString = 15,
+        //XmlElement = 16,
+        //NodeId = 17,
+        //ExpandedNodeId = 18,
+        //StatusCode = 19,
+        //QualifiedName = 20,
+        //LocalizedText = 21,
+        //ExtensionObject = 22,
+        //DataValue = 23,
+        //Variant = 24,
+        //DiagnosticInfo = 25,
+        st_WideString = 25,
+        st_Number = 26,
+        st_Integer = 27,
+        st_UInteger = 28,
+        st_FolderType = 61
+    };
 
     class Symbol;   //incomplete type declaration
 
     //our map to hold whole datas
-    using treeMap = aricanli::container::ThreadSafeMap<std::string, Symbol>;    //sortable map class
+    using treeMap = aricanli::container::ThreadSafeMap<int, Symbol>;    //sortable map class
 
     class SymbolEvent
     {
@@ -90,7 +122,7 @@ namespace Symbols {
             virtual ~BaseArgs() {};    //This makes BaseArgs a polymorphic type
 
             std::string m_symbolName;
-            OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
+            SymbolType m_type{ SymbolType::st_Null };
             const std::any* m_oldVal = nullptr;
             const std::any* m_newVal = nullptr;
         };
@@ -100,10 +132,10 @@ namespace Symbols {
         public:
             OpcServerArgs() = default;   //default constructor
             ~OpcServerArgs() = default;  //destructor
-            OpcServerArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal)
+            OpcServerArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal)
             {
                 m_symbolName = symbolName;
-                m_objectId = objectId;
+                m_type = type;
                 m_oldVal = &oldVal;
                 m_newVal = &newVal;
             }
@@ -114,10 +146,10 @@ namespace Symbols {
         public:
             OpcClientArgs() = default;   //default constructor
             ~OpcClientArgs() = default;  //destructor
-            OpcClientArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal)
+            OpcClientArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal)
             {
                 m_symbolName = symbolName;
-                m_objectId = objectId;
+                m_type = type;
                 m_oldVal = &oldVal;
                 m_newVal = &newVal;
             }
@@ -128,15 +160,15 @@ namespace Symbols {
         public:
             DatabaseArgs() = default;   //default constructor
             ~DatabaseArgs() = default;  //destructor
-            DatabaseArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal, int transactionId):
+            DatabaseArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal, int transactionId) :
                 m_transactionId(transactionId)
             {
                 m_symbolName = symbolName;
-                m_objectId = objectId;
+                m_type = type;
                 m_oldVal = &oldVal;
                 m_newVal = &newVal;
             }
-            
+
             int m_transactionId{};
         };
 
@@ -145,11 +177,11 @@ namespace Symbols {
         public:
             TransactionArgs() = default;   //default constructor
             ~TransactionArgs() = default;  //destructor
-            TransactionArgs(std::string symbolName, OpcUAObjectId objectId, const std::any& oldVal, const std::any& newVal, int deviceTransactionId) :
+            TransactionArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal, int deviceTransactionId) :
                 m_deviceTransactionId(deviceTransactionId)
             {
                 m_symbolName = symbolName;
-                m_objectId = objectId;
+                m_type = type;
                 m_oldVal = &oldVal;
                 m_newVal = &newVal;
             }
@@ -210,15 +242,17 @@ namespace Symbols {
         /*Symbol(const Symbol& r) = delete;
         Symbol& operator=(const Symbol& r) = delete;*/
 
-        Symbol(OpcUAObjectId id, const std::any& val) :
-            m_objectId(id),
+        Symbol(std::string name, SymbolType type, const std::any& val) :
+            m_name(name),
+            m_type(type),
             m_value(val)
         {
 
         }
 
-        Symbol(OpcUAObjectId id, std::any&& val) :
-            m_objectId(id),
+        Symbol(std::string name, SymbolType type, std::any&& val) :
+            m_name(name),
+            m_type(type),
             m_value(std::move(val))
         {
 
@@ -241,11 +275,19 @@ namespace Symbols {
         }
 
         /*
-        *   sets the object id of the object we stored in any.
+        *   get the name of the symbol.
+        *   returns the name of an object we created earlier.
+        */
+        std::string getName() const noexcept {
+            return m_name;
+        }
+
+        /*
+        *   sets the object type of the object we stored in any.
         *   returns nothing.
         */
-        void setObjectId(OpcUAObjectId id) noexcept {
-            m_objectId = id;
+        void setType(SymbolType type) noexcept {
+            m_type = type;
         }
 
         /*
@@ -275,8 +317,8 @@ namespace Symbols {
         *   get the type of the object we stored in any.
         *   returns the type of the object we created earlier.
         */
-        OpcUAObjectId getObjectId() const noexcept {
-            return m_objectId;
+        SymbolType getType() const noexcept {
+            return m_type;
         }
 
         void addEvent(int eventId, SymbolEvent symbolEvent)
@@ -292,7 +334,8 @@ namespace Symbols {
         aricanli::container::ThreadSafeMap<int, SymbolEvent> events;
 
     private:
-        OpcUAObjectId m_objectId{ OpcUAObjectId::Null };
+        SymbolType m_type{ SymbolType::st_Null };
+        std::string m_name;
         std::any m_value;   //can be any value of object
 
     };
@@ -321,48 +364,93 @@ namespace Symbols {
 
     public:
         /*
-        *   Get value of a given name symbol instance.
+        *   Get value of a symbol instance by name.
         *   Params:
-        *   name: given name which is key of map.
+        *   name: Symbol name.
         *   Returns: returns value of map entry, otherwise empty class.
         */
         Symbol GetValue(std::string name) const;
 
         /*
-        *   Set value of a given name symbol instance.
+        *   Get value of a symbol instance by Id.
         *   Params:
-        *   name: given name which is key of map.
+        *   id: Symbol Id which is the key of the map.
+        *   Returns: returns value of map entry, otherwise empty class.
+        */
+        Symbol GetValue(int id) const;
+
+        /*
+        *   Set value of a symbol instance by name.
+        *   Params:
+        *   name: Symbol name.
         *   value: any type of variable to hold into map.
         *   Returns: returns true if successful, otherwise false.
         */
         bool SetValue(std::string name, std::any value);
 
         /*
-        *   Add an event to a given name symbol instance.
+        *   Set value of a symbol instance by Id.
         *   Params:
-        *   name: given name which is key of map.
+        *   id: Symbol Id which is the key of the map.
+        *   value: any type of variable to hold into map.
+        *   Returns: returns true if successful, otherwise false.
+        */
+        bool SetValue(int id, std::any value);
+
+        /*
+        *   Add an event to a symbol instance by name.
+        *   Params:
+        *   name: Symbol name.
         *   symbolEvent: a Symbols::SymbolEvent instance.
         *   Returns: returns true if successful, otherwise false.
         */
         bool AddEvent(std::string name, Symbols::SymbolEvent symbolEvent);
 
         /*
-        *   Insert a value of a given name symbol instance.
+        *   Add an event to a symbol instance by Id.
         *   Params:
-        *   name: given name which is key of map.
-        *   oId: type of variable we send.
+        *   id: Symbol Id which is the key of the map.
+        *   symbolEvent: a Symbols::SymbolEvent instance.
+        *   Returns: returns true if successful, otherwise false.
+        */
+        bool AddEvent(int id, Symbols::SymbolEvent symbolEvent);
+
+        /*
+        *   Insert a symbol.
+        *   Params:
+        *   id: Symbol id.
+        *   name: Symbol name.
+        *   type: type of variable we send.
         *   value: any type of variable to hold into map.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool InsertValue(std::string name, OpcUAObjectId oId, std::any value);
+        bool InsertValue(int id, std::string name, SymbolType type, std::any value);
 
         /*
-        *   Delete a value of a given name symbol instance.
+        *   Insert a symbol by name. Converts string parameter to any<type>.
         *   Params:
-        *   name: given name which is key of map.
+        *   name: Symbol name.
+        *   type: type of variable we send.
+        *   value: any type of variable to hold into map.
+        *   Returns: returns true if successful, otherwise false.
+        */
+        bool InsertFromStringValue(int id, std::string name, SymbolType type, std::string value);
+
+        /*
+        *   Delete a symbol by name.
+        *   Params:
+        *   name: Symbol name.
         *   Returns: returns true if successful, otherwise false.
         */
         bool DeleteValue(std::string name);
+
+        /*
+        *   Delete a symbol by Id.
+        *   Params:
+        *   id: Symbol Id which is the key of the map.
+        *   Returns: returns true if successful, otherwise false.
+        */
+        bool DeleteValue(int id);
 
         /*
         *   Serialize the symbol table to XML.
@@ -372,8 +460,10 @@ namespace Symbols {
         std::vector<unsigned char> SerializeXML() const;
 
     private:
-        void recurseFolders(const treeMap* folder, const std::unique_ptr<tinyxml2::XMLDocument>& doc, 
+        void recurseFolders(const treeMap* folder, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
             tinyxml2::XMLNode* pNode) const;
+
+        int getSymbolIdByName(std::string name) const;
 
     };
 }

@@ -10,16 +10,23 @@
 #include "Symbols.h"
 #include <sstream>
 
+typedef struct _GUID {
+    unsigned long  Data1;
+    unsigned short Data2;
+    unsigned short Data3;
+    unsigned char  Data4[8];
+} GUID;
+
 namespace Symbols {
 
     SymbolEvent::EventFireType Symbol::compare(const std::any& value) const {
         SymbolEvent::EventFireType result{ SymbolEvent::EventFireType::eft_None };
-        switch (m_objectId)
+        switch (m_type)
         {
-        case OpcUAObjectId::Null:
+        case SymbolType::st_Null:
             break;
 
-        case OpcUAObjectId::Boolean:
+        case SymbolType::st_Boolean:
         {
             const auto& b = *get<bool>();
             auto comp = std::any_cast<bool>(value);
@@ -32,7 +39,7 @@ namespace Symbols {
         }
         break;
 
-        case OpcUAObjectId::Float:
+        case SymbolType::st_Float:
         {
             const auto& f = *get<float>();
             auto comp = std::any_cast<float>(value);
@@ -45,7 +52,7 @@ namespace Symbols {
         }
         break;
 
-        case OpcUAObjectId::Double:
+        case SymbolType::st_Double:
         {
             const auto& d = *get<double>();
             auto comp = std::any_cast<double>(value);
@@ -58,7 +65,7 @@ namespace Symbols {
         }
         break;
 
-        case OpcUAObjectId::String:  //it's not a raw string
+        case SymbolType::st_String:  //it's not a raw string
         {
             const auto& s = *get<std::string>();
             auto comp = std::any_cast<std::string>(value);
@@ -71,7 +78,7 @@ namespace Symbols {
         }
         break;
 
-        case OpcUAObjectId::Integer:
+        case SymbolType::st_Integer:
         {
             const auto& i = *get<int>();
             auto comp = std::any_cast<int>(value);
@@ -88,325 +95,253 @@ namespace Symbols {
         return result;
     }
 
+    Symbol SymbolTable::GetValue(int id) const
+    {
+        Symbol bRet;
+        const treeMap* m = this;
+        auto it = m->find(id);
+        if (it != m->end())
+            bRet = it->second;
+        return bRet;
+    }
+
     Symbol SymbolTable::GetValue(std::string name) const
     {
-        //copy elision for name should work for c++ 17
         Symbol bRet;
-
-        bool lastSubs = false;
-        const treeMap* m = this;
-        std::istringstream f(name);
-        std::string s;
-
-        if (name.length() == 0)
-            return Symbol(OpcUAObjectId::FolderType, m);
-
-        // split name into substrings and search
-        while (getline(f, s, '.'))
+        int index = getSymbolIdByName(name);
+        if (index > 0)
         {
-            // is substring same as string or is substring last substring
-            if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
-                lastSubs = true;
+            bRet = GetValue(index);
+        }
+        return bRet;
+    }
 
-            auto it = m->find(s);
-            // substring not found? error
-            if (it == m->cend())
-            {
-                break;
-            }
-            else // substring found
-            {
-                if (lastSubs)
-                {
-                    // return the value
-                    bRet = it->second;
-                }
-                else
-                {
-                    if (it->second.getObjectId() == OpcUAObjectId::FolderType)
-                    {
-                        // advance
-                        m = it->second.get<treeMap>();
-                    }
-                    else
-                    {
-                        // problem: Symbol not a folder
-                        break;
-                    }
-                }
-            }
+    bool SymbolTable::AddEvent(int id, Symbols::SymbolEvent symbolEvent)
+    {
+        bool bRet = false;
+        const treeMap* m = this;
+        auto it = m->find(id);
+        if (it != m->end())
+        {
+            bRet = true;
+            it->second.addEvent(symbolEvent.getEventId(), symbolEvent);
         }
         return bRet;
     }
 
     bool SymbolTable::AddEvent(std::string name, Symbols::SymbolEvent symbolEvent)
     {
-        //copy elision for name should work for c++ 17
-        bool bRet = true;
-
-        bool lastSubs = false;
-        treeMap* m = this;
-        std::istringstream f(name);
-        std::string s;
-
-        if (name.length() == 0)
-            return false;
-
-        // split name into substrings and search
-        while (getline(f, s, '.'))
+        bool bRet = false;
+        int index = getSymbolIdByName(name);
+        if (index > 0)
         {
-            // is substring same as string or is substring last substring
-            if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
-                lastSubs = true;
+            bRet = AddEvent(index, symbolEvent);
+        }
+        return bRet;
+    }
 
-            auto it = m->find(s);
-            // substring not found? error
-            if (it == m->end())
+    bool SymbolTable::SetValue(int id, std::any value)
+    {
+        bool bRet = false;
+        const treeMap* m = this;
+        auto it = m->find(id);
+        if (it != m->end())
+        {
+            // 1: get the current value
+            const std::any& oldVal = it->second.get();
+
+            // 2: determine how the value changed
+            Symbols::SymbolEvent::EventFireType theChange = it->second.compare(value);
+
+            // 3: update with new value
+            it->second.set(value);
+
+            if (theChange != Symbols::SymbolEvent::EventFireType::eft_None)
             {
-                bRet = false;
-                break;
+                //for (auto itm = it->second.events.begin(); itm != it->second.events.end(); itm++)
+                //{
+                //    // 4: SATISFY Symbols::SymbolEvent::EventFireType
+                //    if (itm->second.getEventFireType() != Symbols::SymbolEvent::EventFireType::eft_AnyChange &&
+                //        itm->second.getEventFireType() != theChange)
+                //        continue;
+
+                //    // 5: construct arguments for specified event type and fire event
+                //    if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcServer)
+                //    {
+                //        Symbols::SymbolEvent::OpcServerArgs arg(name, it->second.getType(), oldVal, value);
+                //        itm->second.m_event(&arg);
+                //    }
+                //    else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcClient)
+                //    {
+                //        Symbols::SymbolEvent::OpcClientArgs arg(name, it->second.getType(), oldVal, value);
+                //        itm->second.m_event(&arg);
+                //    }
+                //    else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Database)
+                //    {
+                //        Symbols::SymbolEvent::DatabaseArgs arg(name, it->second.getType(), oldVal, value, 1);
+                //        itm->second.m_event(&arg);
+                //    }
+                //    else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Transaction)
+                //    {
+                //        Symbols::SymbolEvent::TransactionArgs arg(name, it->second.getType(), oldVal, value, 1);
+                //        itm->second.m_event(&arg);
+                //    }
+                //}
             }
-            else // substring found
-            {
-                if (lastSubs)
-                {
-                    // add the event
-                    it->second.addEvent(symbolEvent.getEventId(), symbolEvent);
-                }
-                else
-                {
-                    if (it->second.getObjectId() == OpcUAObjectId::FolderType)
-                    {
-                        // advance
-                        m = const_cast<treeMap*>(it->second.get<treeMap>());
-                    }
-                    else
-                    {
-                        // problem: Symbol not a folder
-                        bRet = false;
-                        break;
-                    }
-                }
-            }
+            bRet = true;
         }
         return bRet;
     }
 
     bool SymbolTable::SetValue(std::string name, std::any value)
     {
-        //copy elision for name should work for c++ 17
-        bool bRet = true;
-        bool lastSubs = false;
-        treeMap* m = this;
-        std::istringstream f(name);
-        std::string s;
-
-        if (name.length() == 0)
-            return false;
-
-        // split name into substrings and search
-        while (getline(f, s, '.'))
+        bool bRet = false;
+        int index = getSymbolIdByName(name);
+        if (index > 0)
         {
-            // is substring same as string or is substring last substring
-            if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
-                lastSubs = true;
-
-            auto it = m->find(s);
-            // substring not found? error
-            if (it == m->end())
-            {
-                bRet = false;
-                break;
-            }
-            else // substring found
-            {
-                if (lastSubs)
-                {
-                    // 1: get the current value
-                    const std::any& oldVal = it->second.get();
-
-                    // 2: determine how the value changed
-                    Symbols::SymbolEvent::EventFireType theChange = it->second.compare(value);
-
-                    // 3: update with new value
-                    it->second.set(value);
-
-                    if (theChange != Symbols::SymbolEvent::EventFireType::eft_None)
-                    {
-                        for (auto itm = it->second.events.begin(); itm != it->second.events.end(); itm++)
-                        {
-                            // 4: SATISFY Symbols::SymbolEvent::EventFireType
-                            if (itm->second.getEventFireType() != Symbols::SymbolEvent::EventFireType::eft_AnyChange &&
-                                itm->second.getEventFireType() != theChange)
-                                continue;
-
-                            // 5: construct arguments for specified event type and fire event
-                            if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcServer)
-                            {
-                                Symbols::SymbolEvent::OpcServerArgs arg(name, it->second.getObjectId(), oldVal, value);
-                                itm->second.m_event(&arg);
-                            }
-                            else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcClient)
-                            {
-                                Symbols::SymbolEvent::OpcClientArgs arg(name, it->second.getObjectId(), oldVal, value);
-                                itm->second.m_event(&arg);
-                            }
-                            else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Database)
-                            {
-                                Symbols::SymbolEvent::DatabaseArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
-                                itm->second.m_event(&arg);
-                            }
-                            else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Transaction)
-                            {
-                                Symbols::SymbolEvent::TransactionArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
-                                itm->second.m_event(&arg);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (it->second.getObjectId() == OpcUAObjectId::FolderType)
-                    {
-                        // advance
-                        m = const_cast<treeMap*>(it->second.get<treeMap>());
-                    }
-                    else
-                    {
-                        // problem: Symbol not a folder
-                        bRet = false;
-                        break;
-                    }
-                }
-            }
+            bRet = SetValue(index, value);
         }
         return bRet;
     }
 
-    bool SymbolTable::InsertValue(std::string name, OpcUAObjectId oId, std::any value)
+    bool SymbolTable::InsertFromStringValue(int id, std::string name, SymbolType type, std::string value)
     {
-        //copy elision for name should work for c++ 17
-        bool bRet = true;
-        bool lastSubs = false;
-        treeMap* m = this;
-        std::istringstream f(name);
-        std::string s;
+        int is;
+        std::string val;
+        std::any anyVal;
 
-        if (name.length() == 0)
-            return false;
+        if (value.length() == 0) val = "0";
+        else val = value;
 
-        // split name into substrings and search
-        while (getline(f, s, '.'))
+        switch (type)
         {
-            // is substring same as string or is substring last substring
-            if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
-                lastSubs = true;
-
-            auto it = m->find(s);
-            // substring not found? create
-            if (it == m->end())
-            {
-                // if base variable type add variable
-                if (lastSubs && oId != OpcUAObjectId::FolderType)
-                {
-                    m->insert(std::make_pair(s, Symbol(oId, value)));
-                }
-                else // if folder type add folder
-                {
-                    m->insert(std::make_pair(s, Symbol(OpcUAObjectId::FolderType, treeMap{})));
-                    m = const_cast<treeMap*>(m->find(s)->second.get<treeMap>());
-                }
-            }
-            else // substring found
-            {
-                if (lastSubs)
-                {
-                    if (it->second.getObjectId() == oId)
-                    {
-                        // update value
-                        it->second.set(value);
-                    }
-                    else
-                    {
-                        // problem: Symbol already defined
-                        bRet = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    if (it->second.getObjectId() == OpcUAObjectId::FolderType)
-                    {
-                        // advance
-                        m = const_cast<treeMap*>(it->second.get<treeMap>());
-                    }
-                    else
-                    {
-                        // problem: Symbol not a folder
-                        bRet = false;
-                        break;
-                    }
-                }
-            }
+        case SymbolType::st_Boolean:
+            anyVal = true;
+            if (val.substr(0, 1) == "0") anyVal = false;
+            break;
+        case SymbolType::st_SByte:
+            anyVal = reinterpret_cast<char>(val.substr(0, 1).data());
+            break;
+        case SymbolType::st_Byte:
+            anyVal = reinterpret_cast<unsigned char>(val.substr(0, 1).data());
+            break;
+        case SymbolType::st_Int16:
+            is = static_cast<int>(std::strtol(val.c_str(), NULL, 0));
+            if (is > SHRT_MAX)
+                anyVal = static_cast<short>(SHRT_MAX);
+            else if (is < SHRT_MIN)
+                anyVal = static_cast<short>(SHRT_MIN);
+            else
+                anyVal = static_cast<short>(is);
+            break;
+        case SymbolType::st_UInt16:
+            is = static_cast<int>(std::strtol(val.c_str(), NULL, 0));
+            if (is > USHRT_MAX)
+                anyVal = static_cast<unsigned short>(USHRT_MAX);
+            else if (is < 0)
+                anyVal = static_cast<unsigned short>(0);
+            else
+                anyVal = static_cast<unsigned short>(is);
+            break;
+        case SymbolType::st_Integer:
+        case SymbolType::st_Int32:
+            anyVal = static_cast<int>(std::strtol(val.c_str(), NULL, 0));
+            break;
+        case SymbolType::st_UInteger:
+        case SymbolType::st_UInt32:
+            anyVal = static_cast<unsigned int>(std::strtoul(val.c_str(), NULL, 0));
+            break;
+        case SymbolType::st_Int64:
+            anyVal = static_cast<long long>(std::strtoll(val.c_str(), NULL, 0));
+            break;
+        case SymbolType::st_UInt64:
+            anyVal = static_cast<unsigned long long>(std::strtoull(val.c_str(), NULL, 0));
+            break;
+        case SymbolType::st_Number:
+        case SymbolType::st_Float:
+            anyVal = static_cast<float>(std::strtof(val.c_str(), NULL));
+            break;
+        case SymbolType::st_Double:
+            anyVal = static_cast<float>(std::strtod(val.c_str(), NULL));
+            break;
+        case SymbolType::st_String:
+            anyVal = val;
+            break;
+        case SymbolType::st_DateTime:
+            anyVal = static_cast<unsigned long long>(std::strtoull(val.c_str(), NULL, 0));
+            break;
+        case SymbolType::st_Guid:
+            GUID guid;
+            sscanf(val.c_str(),
+                "{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}",
+                &guid.Data1, &guid.Data2, &guid.Data3,
+                &guid.Data4[0], &guid.Data4[1], &guid.Data4[2], &guid.Data4[3],
+                &guid.Data4[4], &guid.Data4[5], &guid.Data4[6], &guid.Data4[7]);
+            anyVal = guid;
+            break;
+        case SymbolType::st_WideString:
+            anyVal = val;
+            break;
+        case SymbolType::st_Null:
+        default:
+            anyVal = val;
+            break;
         }
+
+        return InsertValue(id, name, type, anyVal);
+    }
+
+    bool SymbolTable::InsertValue(int id, std::string name, SymbolType type, std::any value)
+    {
+        bool bRet = false;
+        const treeMap* m = this;
+        m->insert(std::make_pair(id, Symbol(name, type, value)));
         return bRet;
     }
 
     bool SymbolTable::DeleteValue(std::string name)
     {
-        //copy elision for name should work for c++ 17
-        bool bRet = true;
-        bool lastSubs = false;
-        treeMap* m = this;
-        std::istringstream f(name);
-        std::string s;
-
-        if (name.length() == 0)
-            return false;
-
-        // split name into substrings and search
-        while (getline(f, s, '.'))
+        bool bRet = false;
+        int index = getSymbolIdByName(name);
+        if (index > 0)
         {
-            // is substring same as string or is substring last substring
-            if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
-                lastSubs = true;
-
-            auto it = m->find(s);
-            // substring not found? error
-            if (it == m->end())
-            {
-                bRet = false;
-                break;
-            }
-            else // substring found
-            {
-                if (lastSubs)
-                {
-                    m->erase(it);
-                }
-                else
-                {
-                    if (it->second.getObjectId() == OpcUAObjectId::FolderType)
-                    {
-                        // advance
-                        m = const_cast<treeMap*>(it->second.get<treeMap>());
-                    }
-                    else
-                    {
-                        // problem: Symbol not a folder
-                        bRet = false;
-                        break;
-                    }
-                }
-            }
+            bRet = DeleteValue(index);
         }
         return bRet;
+    }
+
+    bool SymbolTable::DeleteValue(int id)
+    {
+        bool bRet = false;
+        const treeMap* m = this;
+        auto it = m->find(id);
+        if (it != m->end())
+        {
+            m->erase(it);
+            bRet = true;
+        }
+        return bRet;
+    }
+
+    int SymbolTable::getSymbolIdByName(std::string name) const
+    {
+        int iRet = 0;
+        const treeMap* m = this;
+        auto it = m->begin();
+        for (it = m->begin(); it != m->end(); it++)
+        {
+            if (it->second.getName() == name)
+                break;
+        }
+        if (it != m->end())
+            iRet = it->first;
+        return iRet;
     }
 
     std::vector<unsigned char> SymbolTable::SerializeXML() const
     {
         tinyxml2::XMLElement* root = nullptr, * pElm = nullptr;
-        
+
         std::vector<unsigned char> charVec;
         const treeMap* m = this;
 
@@ -416,18 +351,18 @@ namespace Symbols {
 
         for (auto it = m->cbegin(); it != m->cend(); it++)
         {
-            if (it->second.getObjectId() == OpcUAObjectId::FolderType)
+            if (it->second.getType() == SymbolType::st_FolderType)
             {
                 pElm = pDoc->NewElement(XML_ELEMENT_FOLDER);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
+                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
                 recurseFolders(it->second.get<treeMap>(), pDoc, pElm);
                 pRoot->LinkEndChild(pElm);
             }
             else
             {
                 pElm = pDoc->NewElement(XML_ELEMENT_SYMBOL);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
-                pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getObjectId()));
+                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
+                pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getType()));
                 pRoot->LinkEndChild(pElm);
             }
         }
@@ -441,31 +376,414 @@ namespace Symbols {
         const char* end = chIn + strlen(chIn);
 
         charVec.insert(charVec.end(), chIn, end);
-        
+
         return charVec;
     }
 
-    void SymbolTable::recurseFolders(const treeMap* m, const std::unique_ptr<tinyxml2::XMLDocument>& doc, 
+    void SymbolTable::recurseFolders(const treeMap* m, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
         tinyxml2::XMLNode* pNode) const
     {
         tinyxml2::XMLElement* pElm;
 
         for (auto it = m->cbegin(); it != m->cend(); it++)
         {
-            if (it->second.getObjectId() == OpcUAObjectId::FolderType)
+            if (it->second.getType() == SymbolType::st_FolderType)
             {
                 pElm = doc->NewElement(XML_ELEMENT_FOLDER);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
+                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
                 recurseFolders(it->second.get<treeMap>(), doc, pElm);
                 pNode->LinkEndChild(pElm);
             }
             else
             {
                 pElm = doc->NewElement(XML_ELEMENT_SYMBOL);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
-                pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getObjectId()));
+                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
+                pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getType()));
                 pNode->LinkEndChild(pElm);
             }
         }
     }
+
+    //Symbol SymbolTable::GetValue(std::string name) const
+    //{
+    //    //copy elision for name should work for c++ 17
+    //    Symbol bRet;
+
+    //    bool lastSubs = false;
+    //    const treeMap* m = this;
+    //    std::istringstream f(name);
+    //    std::string s;
+
+    //    if (name.length() == 0)
+    //        return Symbol(SymbolType::st_FolderType, m);
+
+    //    // split name into substrings and search
+    //    while (getline(f, s, '.'))
+    //    {
+    //        // is substring same as string or is substring last substring
+    //        if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
+    //            lastSubs = true;
+
+    //        auto it = m->find(s);
+    //        // substring not found? error
+    //        if (it == m->cend())
+    //        {
+    //            break;
+    //        }
+    //        else // substring found
+    //        {
+    //            if (lastSubs)
+    //            {
+    //                // return the value
+    //                bRet = it->second;
+    //            }
+    //            else
+    //            {
+    //                if (it->second.getObjectId() == SymbolType::st_FolderType)
+    //                {
+    //                    // advance
+    //                    m = it->second.get<treeMap>();
+    //                }
+    //                else
+    //                {
+    //                    // problem: Symbol not a folder
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //    }
+    //    return bRet;
+    //}
+
+    //bool SymbolTable::AddEvent(std::string name, Symbols::SymbolEvent symbolEvent)
+    //{
+    //    //copy elision for name should work for c++ 17
+    //    bool bRet = true;
+
+    //    bool lastSubs = false;
+    //    treeMap* m = this;
+    //    std::istringstream f(name);
+    //    std::string s;
+
+    //    if (name.length() == 0)
+    //        return false;
+
+    //    // split name into substrings and search
+    //    while (getline(f, s, '.'))
+    //    {
+    //        // is substring same as string or is substring last substring
+    //        if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
+    //            lastSubs = true;
+
+    //        auto it = m->find(s);
+    //        // substring not found? error
+    //        if (it == m->end())
+    //        {
+    //            bRet = false;
+    //            break;
+    //        }
+    //        else // substring found
+    //        {
+    //            if (lastSubs)
+    //            {
+    //                // add the event
+    //                it->second.addEvent(symbolEvent.getEventId(), symbolEvent);
+    //            }
+    //            else
+    //            {
+    //                if (it->second.getObjectId() == SymbolType::st_FolderType)
+    //                {
+    //                    // advance
+    //                    m = const_cast<treeMap*>(it->second.get<treeMap>());
+    //                }
+    //                else
+    //                {
+    //                    // problem: Symbol not a folder
+    //                    bRet = false;
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //    }
+    //    return bRet;
+    //}
+
+    //bool SymbolTable::SetValue(std::string name, std::any value)
+    //{
+    //    //copy elision for name should work for c++ 17
+    //    bool bRet = true;
+    //    bool lastSubs = false;
+    //    treeMap* m = this;
+    //    std::istringstream f(name);
+    //    std::string s;
+
+    //    if (name.length() == 0)
+    //        return false;
+
+    //    // split name into substrings and search
+    //    while (getline(f, s, '.'))
+    //    {
+    //        // is substring same as string or is substring last substring
+    //        if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
+    //            lastSubs = true;
+
+    //        auto it = m->find(s);
+    //        // substring not found? error
+    //        if (it == m->end())
+    //        {
+    //            bRet = false;
+    //            break;
+    //        }
+    //        else // substring found
+    //        {
+    //            if (lastSubs)
+    //            {
+    //                // 1: get the current value
+    //                const std::any& oldVal = it->second.get();
+
+    //                // 2: determine how the value changed
+    //                Symbols::SymbolEvent::EventFireType theChange = it->second.compare(value);
+
+    //                // 3: update with new value
+    //                it->second.set(value);
+
+    //                if (theChange != Symbols::SymbolEvent::EventFireType::eft_None)
+    //                {
+    //                    for (auto itm = it->second.events.begin(); itm != it->second.events.end(); itm++)
+    //                    {
+    //                        // 4: SATISFY Symbols::SymbolEvent::EventFireType
+    //                        if (itm->second.getEventFireType() != Symbols::SymbolEvent::EventFireType::eft_AnyChange &&
+    //                            itm->second.getEventFireType() != theChange)
+    //                            continue;
+
+    //                        // 5: construct arguments for specified event type and fire event
+    //                        if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcServer)
+    //                        {
+    //                            Symbols::SymbolEvent::OpcServerArgs arg(name, it->second.getObjectId(), oldVal, value);
+    //                            itm->second.m_event(&arg);
+    //                        }
+    //                        else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_OpcClient)
+    //                        {
+    //                            Symbols::SymbolEvent::OpcClientArgs arg(name, it->second.getObjectId(), oldVal, value);
+    //                            itm->second.m_event(&arg);
+    //                        }
+    //                        else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Database)
+    //                        {
+    //                            Symbols::SymbolEvent::DatabaseArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
+    //                            itm->second.m_event(&arg);
+    //                        }
+    //                        else if (itm->second.getEventType() == Symbols::SymbolEvent::EventType::et_Transaction)
+    //                        {
+    //                            Symbols::SymbolEvent::TransactionArgs arg(name, it->second.getObjectId(), oldVal, value, 1);
+    //                            itm->second.m_event(&arg);
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //            else
+    //            {
+    //                if (it->second.getObjectId() == SymbolType::st_FolderType)
+    //                {
+    //                    // advance
+    //                    m = const_cast<treeMap*>(it->second.get<treeMap>());
+    //                }
+    //                else
+    //                {
+    //                    // problem: Symbol not a folder
+    //                    bRet = false;
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //    }
+    //    return bRet;
+    //}
+
+
+    //bool SymbolTable::InsertValue(std::string name, SymbolType oId, std::any value)
+    //{
+    //    //copy elision for name should work for c++ 17
+    //    bool bRet = true;
+    //    bool lastSubs = false;
+    //    treeMap* m = this;
+    //    std::istringstream f(name);
+    //    std::string s;
+
+    //    if (name.length() == 0)
+    //        return false;
+
+    //    // split name into substrings and search
+    //    while (getline(f, s, '.'))
+    //    {
+    //        // is substring same as string or is substring last substring
+    //        if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
+    //            lastSubs = true;
+
+    //        auto it = m->find(s);
+    //        // substring not found? create
+    //        if (it == m->end())
+    //        {
+    //            // if base variable type add variable
+    //            if (lastSubs && oId != SymbolType::st_FolderType)
+    //            {
+    //                m->insert(std::make_pair(s, Symbol(oId, value)));
+    //            }
+    //            else // if folder type add folder
+    //            {
+    //                m->insert(std::make_pair(s, Symbol(SymbolType::st_FolderType, treeMap{})));
+    //                m = const_cast<treeMap*>(m->find(s)->second.get<treeMap>());
+    //            }
+    //        }
+    //        else // substring found
+    //        {
+    //            if (lastSubs)
+    //            {
+    //                if (it->second.getObjectId() == oId)
+    //                {
+    //                    // update value
+    //                    it->second.set(value);
+    //                }
+    //                else
+    //                {
+    //                    // problem: Symbol already defined
+    //                    bRet = false;
+    //                    break;
+    //                }
+    //            }
+    //            else
+    //            {
+    //                if (it->second.getObjectId() == SymbolType::st_FolderType)
+    //                {
+    //                    // advance
+    //                    m = const_cast<treeMap*>(it->second.get<treeMap>());
+    //                }
+    //                else
+    //                {
+    //                    // problem: Symbol not a folder
+    //                    bRet = false;
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //    }
+    //    return bRet;
+    //}
+
+    //bool SymbolTable::DeleteValue(std::string name)
+    //{
+    //    //copy elision for name should work for c++ 17
+    //    bool bRet = true;
+    //    bool lastSubs = false;
+    //    treeMap* m = this;
+    //    std::istringstream f(name);
+    //    std::string s;
+
+    //    if (name.length() == 0)
+    //        return false;
+
+    //    // split name into substrings and search
+    //    while (getline(f, s, '.'))
+    //    {
+    //        // is substring same as string or is substring last substring
+    //        if (name == s || name.rfind("." + s) == name.length() - s.length() - 1)
+    //            lastSubs = true;
+
+    //        auto it = m->find(s);
+    //        // substring not found? error
+    //        if (it == m->end())
+    //        {
+    //            bRet = false;
+    //            break;
+    //        }
+    //        else // substring found
+    //        {
+    //            if (lastSubs)
+    //            {
+    //                m->erase(it);
+    //            }
+    //            else
+    //            {
+    //                if (it->second.getObjectId() == SymbolType::st_FolderType)
+    //                {
+    //                    // advance
+    //                    m = const_cast<treeMap*>(it->second.get<treeMap>());
+    //                }
+    //                else
+    //                {
+    //                    // problem: Symbol not a folder
+    //                    bRet = false;
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //    }
+    //    return bRet;
+    //}
+
+    //std::vector<unsigned char> SymbolTable::SerializeXML() const
+    //{
+    //    tinyxml2::XMLElement* root = nullptr, * pElm = nullptr;
+
+    //    std::vector<unsigned char> charVec;
+    //    const treeMap* m = this;
+
+    //    auto pDoc = std::make_unique<tinyxml2::XMLDocument>();
+    //    tinyxml2::XMLNode* pRoot = pDoc->NewElement(XML_ELEMENT_SYMBOLTABLE);
+    //    pDoc->InsertFirstChild(pRoot);
+
+    //    for (auto it = m->cbegin(); it != m->cend(); it++)
+    //    {
+    //        if (it->second.getObjectId() == SymbolType::st_FolderType)
+    //        {
+    //            pElm = pDoc->NewElement(XML_ELEMENT_FOLDER);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
+    //            recurseFolders(it->second.get<treeMap>(), pDoc, pElm);
+    //            pRoot->LinkEndChild(pElm);
+    //        }
+    //        else
+    //        {
+    //            pElm = pDoc->NewElement(XML_ELEMENT_SYMBOL);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
+    //            pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getObjectId()));
+    //            pRoot->LinkEndChild(pElm);
+    //        }
+    //    }
+
+    //    //print
+    //    tinyxml2::XMLPrinter printer;
+    //    pDoc->Accept(&printer);
+
+    //    const char* chIn = printer.CStr();
+
+    //    const char* end = chIn + strlen(chIn);
+
+    //    charVec.insert(charVec.end(), chIn, end);
+
+    //    return charVec;
+    //}
+
+    //void SymbolTable::recurseFolders(const treeMap* m, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
+    //    tinyxml2::XMLNode* pNode) const
+    //{
+    //    tinyxml2::XMLElement* pElm;
+
+    //    for (auto it = m->cbegin(); it != m->cend(); it++)
+    //    {
+    //        if (it->second.getObjectId() == SymbolType::st_FolderType)
+    //        {
+    //            pElm = doc->NewElement(XML_ELEMENT_FOLDER);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
+    //            recurseFolders(it->second.get<treeMap>(), doc, pElm);
+    //            pNode->LinkEndChild(pElm);
+    //        }
+    //        else
+    //        {
+    //            pElm = doc->NewElement(XML_ELEMENT_SYMBOL);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->first.c_str());
+    //            pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getObjectId()));
+    //            pNode->LinkEndChild(pElm);
+    //        }
+    //    }
+    //}
+
 }

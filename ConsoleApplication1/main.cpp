@@ -35,15 +35,15 @@ static inline void UpdateCallback(Symbols::SymbolEvent::BaseArgs* args)
 class CSymbolTest
 {
 public:
-    CSymbolTest(unsigned int nThreads = std::thread::hardware_concurrency()) 
+    CSymbolTest(unsigned int nThreads = std::thread::hardware_concurrency())
     {
         std::cout << nThreads << " threads will start working soon" << "\n\n";
         for (unsigned int i = 0; i < nThreads; i++)
-            m_VecThreads.emplace_back(std::thread(&CSymbolTest::DummyThreadTest, this, 10 * i, 50 * i + 100));
+            m_VecThreads.emplace_back(std::thread(&CSymbolTest::DummyThreadTest, this, i, 10 * i, 50 * i + 100));
 
     }
 
-    ~CSymbolTest() 
+    ~CSymbolTest()
     {
         const auto vecSize = m_VecThreads.size();
         //join threads
@@ -61,29 +61,29 @@ public:
 
     void insertItems()
     {
-        symbols.InsertValue("folder1.folder1a.folder1a1.b", OpcUAObjectId::Boolean, true);
-        symbols.InsertValue("folder1.folder1a.folder1a1.i", OpcUAObjectId::Integer, 45);
-        symbols.InsertValue("folder1.folder1a.folder1a1.d", OpcUAObjectId::Double, 1.2);
-        symbols.InsertValue("folder1.folder1a.folder1a1.f", OpcUAObjectId::Float, 45.3f);
-        symbols.InsertValue("folder1.folder1a.folder1a1.s", OpcUAObjectId::String, std::string("folder1.folder1a.folder1a1.s"));
+        symbols.InsertValue(1, "folder1.folder1a.folder1a1.b", Symbols::SymbolType::st_Boolean, true);
+        symbols.InsertValue(2, "folder1.folder1a.folder1a1.i", Symbols::SymbolType::st_Integer, 45);
+        symbols.InsertValue(3, "folder1.folder1a.folder1a1.d", Symbols::SymbolType::st_Double, 1.2);
+        symbols.InsertValue(4, "folder1.folder1a.folder1a1.f", Symbols::SymbolType::st_Float, 45.3f);
+        symbols.InsertValue(5, "folder1.folder1a.folder1a1.s", Symbols::SymbolType::st_String, std::string("folder1.folder1a.folder1a1.s"));
 
-        symbols.InsertValue("folder1.b", OpcUAObjectId::Boolean, true);
-        symbols.InsertValue("folder1.i", OpcUAObjectId::Integer, 41);
-        symbols.InsertValue("folder1.d", OpcUAObjectId::Double, 1.1);
-        symbols.InsertValue("folder1.f", OpcUAObjectId::Float, 45.1f);
-        symbols.InsertValue("folder1.s", OpcUAObjectId::String, std::string("folder1.s"));
+        symbols.InsertValue(6, "folder1.b", Symbols::SymbolType::st_Boolean, true);
+        symbols.InsertValue(7, "folder1.i", Symbols::SymbolType::st_Integer, 41);
+        symbols.InsertValue(8, "folder1.d", Symbols::SymbolType::st_Double, 1.1);
+        symbols.InsertValue(9, "folder1.f", Symbols::SymbolType::st_Float, 45.1f);
+        symbols.InsertValue(10, "folder1.s", Symbols::SymbolType::st_String, std::string("folder1.s"));
 
-        symbols.InsertValue("folder2.b", OpcUAObjectId::Boolean, false);
-        symbols.InsertValue("folder2.i", OpcUAObjectId::Integer, 21);
-        symbols.InsertValue("folder2.d", OpcUAObjectId::Double, 2.1);
-        symbols.InsertValue("folder2.f", OpcUAObjectId::Float, 25.1f);
-        symbols.InsertValue("folder2.s", OpcUAObjectId::String, std::string("folder2.s"));
+        symbols.InsertValue(11, "folder2.b", Symbols::SymbolType::st_Boolean, false);
+        symbols.InsertValue(12, "folder2.i", Symbols::SymbolType::st_Integer, 21);
+        symbols.InsertValue(13, "folder2.d", Symbols::SymbolType::st_Double, 2.1);
+        symbols.InsertValue(14, "folder2.f", Symbols::SymbolType::st_Float, 25.1f);
+        symbols.InsertValue(15, "folder2.s", Symbols::SymbolType::st_String, std::string("folder2.s"));
 
-        symbols.InsertValue("b", OpcUAObjectId::Boolean, false);
-        symbols.InsertValue("i", OpcUAObjectId::Integer, 40);
-        symbols.InsertValue("d", OpcUAObjectId::Double, 1.01);
-        symbols.InsertValue("f", OpcUAObjectId::Float, 45.01f);
-        symbols.InsertValue("s", OpcUAObjectId::String, std::string("s"));
+        symbols.InsertValue(16, "b", Symbols::SymbolType::st_Boolean, false);
+        symbols.InsertValue(17, "i", Symbols::SymbolType::st_Integer, 40);
+        symbols.InsertValue(18, "d", Symbols::SymbolType::st_Double, 1.01);
+        symbols.InsertValue(19, "f", Symbols::SymbolType::st_Float, 45.01f);
+        symbols.InsertValue(20, "s", Symbols::SymbolType::st_String, std::string("s"));
 
         displayValue("folder1.folder1a.folder1a1.b", symbols.GetValue("folder1.folder1a.folder1a1.b"));
         displayValue("folder1.folder1a.folder1a1.i", symbols.GetValue("folder1.folder1a.folder1a1.i"));
@@ -146,33 +146,33 @@ private:
     {
         std::cout << "the value of '" << path << "' is: ";
 
-        switch (val.getObjectId())
+        switch (val.getType())
         {
-        case OpcUAObjectId::Null:
+        case Symbols::SymbolType::st_Null:
             std::cout << "NULL";
             break;
 
-        case OpcUAObjectId::Boolean:
+        case Symbols::SymbolType::st_Boolean:
             std::cout << *val.get<bool>();
             break;
 
-        case OpcUAObjectId::Float:
+        case Symbols::SymbolType::st_Float:
             std::cout << *val.get<float>();
             break;
 
-        case OpcUAObjectId::Double:
+        case Symbols::SymbolType::st_Double:
             std::cout << *val.get<double>();
             break;
 
-        case OpcUAObjectId::String:  //it's not a raw string
+        case Symbols::SymbolType::st_String:  //it's not a raw string
             std::cout << "'" << *val.get<std::string>() << "'";
             break;
 
-        case OpcUAObjectId::Integer:
+        case Symbols::SymbolType::st_Integer:
             std::cout << *val.get<int>();
             break;
 
-        case OpcUAObjectId::FolderType:
+        case Symbols::SymbolType::st_FolderType:
             std::cout << "Folder";
             break;
 
@@ -181,19 +181,19 @@ private:
         std::cout << std::endl;
     }
 
-    void DummyThreadTest(unsigned int iStart, unsigned int iEnd)
+    void DummyThreadTest(unsigned int threadNo, unsigned int iStart, unsigned int iEnd)
     {
         for (unsigned i = iStart; i < iEnd; i++)
         {
             std::string strVal("i");
             strVal.append(std::to_string(i));
 
-            symbols.InsertValue(strVal, OpcUAObjectId::Integer , i);
+            symbols.InsertValue(threadNo * 10000 + i, strVal, Symbols::SymbolType::st_Integer, i);
         }
     }
 
-    protected:
-        std::vector<std::thread> m_VecThreads;  //threads into vector
+protected:
+    std::vector<std::thread> m_VecThreads;  //threads into vector
 };
 
 class COpcServerSubscriptionTest
@@ -205,20 +205,20 @@ public:
     void assignEvents()
     {
         CSymbolTest::symbols.AddEvent("folder1.folder1a.folder1a1.i",
-                Symbols::SymbolEvent(
-                0, 
-                Symbols::SymbolEvent::EventType::et_OpcServer, 
-                Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
+            Symbols::SymbolEvent(
+                0,
+                Symbols::SymbolEvent::EventType::et_OpcServer,
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange,
                 &UpdateCallback
             ));
-        CSymbolTest::symbols.AddEvent("folder1.d", 
-            Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, 
-                Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
+        CSymbolTest::symbols.AddEvent("folder1.d",
+            Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer,
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange,
                 &UpdateCallback));
 
-        CSymbolTest::symbols.AddEvent("f", 
-            Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer, 
-                Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
+        CSymbolTest::symbols.AddEvent("f",
+            Symbols::SymbolEvent(0, Symbols::SymbolEvent::EventType::et_OpcServer,
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange,
                 &UpdateCallback));
     }
 };
@@ -239,15 +239,15 @@ public:
                 Symbols::SymbolEvent::EventFireType::eft_AnyChange,
                 &UpdateCallback
             ));
-        CSymbolTest::symbols.AddEvent("folder1.d", 
-            Symbols::SymbolEvent(5, Symbols::SymbolEvent::EventType::et_Transaction, 
-            Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
-            &UpdateCallback));
+        CSymbolTest::symbols.AddEvent("folder1.d",
+            Symbols::SymbolEvent(5, Symbols::SymbolEvent::EventType::et_Transaction,
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange,
+                &UpdateCallback));
 
-        CSymbolTest::symbols.AddEvent("f", 
-            Symbols::SymbolEvent(2, Symbols::SymbolEvent::EventType::et_Transaction, 
-            Symbols::SymbolEvent::EventFireType::eft_AnyChange, 
-            &UpdateCallback));
+        CSymbolTest::symbols.AddEvent("f",
+            Symbols::SymbolEvent(2, Symbols::SymbolEvent::EventType::et_Transaction,
+                Symbols::SymbolEvent::EventFireType::eft_AnyChange,
+                &UpdateCallback));
     }
 };
 
@@ -273,7 +273,7 @@ int main()
 
     //root item for testing
     auto sym = test.symbols.GetValue("");
-    std::cout << "type: " << static_cast<int>(sym.getObjectId()) << "\n\n\n";
+    std::cout << "type: " << static_cast<int>(sym.getType()) << "\n\n\n";
 
     opcServerTest.assignEvents();
     //opcClientTest.assignEvents();

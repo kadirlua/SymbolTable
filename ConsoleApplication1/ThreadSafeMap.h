@@ -201,7 +201,7 @@ namespace aricanli::container {
         {
             //Exclusive lock to enable single write in the map
             std::unique_lock<std::shared_mutex> lock(mutex_);
-            return _Mybase::emplace(std::move(args...));
+            return _Mybase::emplace(std::forward<Args>(args)...);
         }
 
     private:

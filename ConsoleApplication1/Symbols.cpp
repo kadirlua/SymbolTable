@@ -98,9 +98,8 @@ namespace Symbols {
     Symbol SymbolTable::GetValue(int id) const
     {
         Symbol bRet;
-        const treeMap* m = this;
-        auto it = m->find(id);
-        if (it != m->end())
+        auto it = find(id);
+        if (it != end())
             bRet = it->second;
         return bRet;
     }
@@ -119,9 +118,8 @@ namespace Symbols {
     bool SymbolTable::AddEvent(int id, Symbols::SymbolEvent symbolEvent)
     {
         bool bRet = false;
-        const treeMap* m = this;
-        auto it = m->find(id);
-        if (it != m->end())
+        auto it = find(id);
+        if (it != end())
         {
             bRet = true;
             it->second.addEvent(symbolEvent.getEventId(), symbolEvent);
@@ -143,9 +141,8 @@ namespace Symbols {
     bool SymbolTable::SetValue(int id, std::any value)
     {
         bool bRet = false;
-        const treeMap* m = this;
-        auto it = m->find(id);
-        if (it != m->end())
+        auto it = find(id);
+        if (it != end())
         {
             // 1: get the current value
             const std::any& oldVal = it->second.get();
@@ -226,7 +223,7 @@ namespace Symbols {
             anyVal = reinterpret_cast<unsigned char>(val.substr(0, 1).data());
             break;
         case SymbolType::st_Int16:
-            is = static_cast<int>(std::strtol(val.c_str(), NULL, 0));
+            is = static_cast<int>(std::strtol(val.c_str(), nullptr, 0));
             if (is > SHRT_MAX)
                 anyVal = static_cast<short>(SHRT_MAX);
             else if (is < SHRT_MIN)
@@ -235,7 +232,7 @@ namespace Symbols {
                 anyVal = static_cast<short>(is);
             break;
         case SymbolType::st_UInt16:
-            is = static_cast<int>(std::strtol(val.c_str(), NULL, 0));
+            is = static_cast<int>(std::strtol(val.c_str(), nullptr, 0));
             if (is > USHRT_MAX)
                 anyVal = static_cast<unsigned short>(USHRT_MAX);
             else if (is < 0)
@@ -245,34 +242,34 @@ namespace Symbols {
             break;
         case SymbolType::st_Integer:
         case SymbolType::st_Int32:
-            anyVal = static_cast<int>(std::strtol(val.c_str(), NULL, 0));
+            anyVal = static_cast<int>(std::strtol(val.c_str(), nullptr, 0));
             break;
         case SymbolType::st_UInteger:
         case SymbolType::st_UInt32:
-            anyVal = static_cast<unsigned int>(std::strtoul(val.c_str(), NULL, 0));
+            anyVal = static_cast<unsigned int>(std::strtoul(val.c_str(), nullptr, 0));
             break;
         case SymbolType::st_Int64:
-            anyVal = static_cast<long long>(std::strtoll(val.c_str(), NULL, 0));
+            anyVal = static_cast<long long>(std::strtoll(val.c_str(), nullptr, 0));
             break;
         case SymbolType::st_UInt64:
-            anyVal = static_cast<unsigned long long>(std::strtoull(val.c_str(), NULL, 0));
+            anyVal = static_cast<unsigned long long>(std::strtoull(val.c_str(), nullptr, 0));
             break;
         case SymbolType::st_Number:
         case SymbolType::st_Float:
-            anyVal = static_cast<float>(std::strtof(val.c_str(), NULL));
+            anyVal = static_cast<float>(std::strtof(val.c_str(), nullptr));
             break;
         case SymbolType::st_Double:
-            anyVal = static_cast<float>(std::strtod(val.c_str(), NULL));
+            anyVal = static_cast<float>(std::strtod(val.c_str(), nullptr));
             break;
         case SymbolType::st_String:
             anyVal = val;
             break;
         case SymbolType::st_DateTime:
-            anyVal = static_cast<unsigned long long>(std::strtoull(val.c_str(), NULL, 0));
+            anyVal = static_cast<unsigned long long>(std::strtoull(val.c_str(), nullptr, 0));
             break;
         case SymbolType::st_Guid:
             GUID guid;
-            sscanf(val.c_str(),
+            sscanf_s(val.c_str(),
                 "{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}",
                 &guid.Data1, &guid.Data2, &guid.Data3,
                 &guid.Data4[0], &guid.Data4[1], &guid.Data4[2], &guid.Data4[3],
@@ -294,8 +291,7 @@ namespace Symbols {
     bool SymbolTable::InsertValue(int id, std::string name, SymbolType type, std::any value)
     {
         bool bRet = false;
-        const treeMap* m = this;
-        m->insert(std::make_pair(id, Symbol(name, type, value)));
+        emplace(id, Symbol(name, type, value));
         return bRet;
     }
 
@@ -313,11 +309,10 @@ namespace Symbols {
     bool SymbolTable::DeleteValue(int id)
     {
         bool bRet = false;
-        const treeMap* m = this;
-        auto it = m->find(id);
-        if (it != m->end())
+        auto it = find(id);
+        if (it != end())
         {
-            m->erase(it);
+            erase(it);
             bRet = true;
         }
         return bRet;
@@ -326,15 +321,11 @@ namespace Symbols {
     int SymbolTable::getSymbolIdByName(std::string name) const
     {
         int iRet = 0;
-        const treeMap* m = this;
-        auto it = m->begin();
-        for (it = m->begin(); it != m->end(); it++)
+        for (auto it = begin(); it != end(); it++)
         {
             if (it->second.getName() == name)
-                break;
+                return it->first;
         }
-        if (it != m->end())
-            iRet = it->first;
         return iRet;
     }
 
@@ -343,13 +334,12 @@ namespace Symbols {
         tinyxml2::XMLElement* root = nullptr, * pElm = nullptr;
 
         std::vector<unsigned char> charVec;
-        const treeMap* m = this;
-
+        
         auto pDoc = std::make_unique<tinyxml2::XMLDocument>();
         tinyxml2::XMLNode* pRoot = pDoc->NewElement(XML_ELEMENT_SYMBOLTABLE);
         pDoc->InsertFirstChild(pRoot);
 
-        for (auto it = m->cbegin(); it != m->cend(); it++)
+        for (auto it = cbegin(); it != cend(); it++)
         {
             if (it->second.getType() == SymbolType::st_FolderType)
             {

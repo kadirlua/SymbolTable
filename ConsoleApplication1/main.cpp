@@ -172,9 +172,9 @@ private:
             std::cout << *val.get<int>();
             break;
 
-        case Symbols::SymbolType::st_FolderType:
-            std::cout << "Folder";
-            break;
+        //case Symbols::SymbolType::st_FolderType:
+        //    std::cout << "Folder";
+        //    break;
 
         }
 

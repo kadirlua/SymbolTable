@@ -291,7 +291,7 @@ namespace Symbols {
     bool SymbolTable::InsertValue(int id, std::string name, SymbolType type, std::any value)
     {
         bool bRet = false;
-        emplace(id, Symbol(name, type, value));
+        emplace(id, Symbol(id, name, type, value));
         return bRet;
     }
 
@@ -334,26 +334,67 @@ namespace Symbols {
         tinyxml2::XMLElement* root = nullptr, * pElm = nullptr;
 
         std::vector<unsigned char> charVec;
-        
+
+        std::map<std::string, Symbol> nameMap;
+        std::map<std::string, Symbol>::iterator itn;
+
         auto pDoc = std::make_unique<tinyxml2::XMLDocument>();
         tinyxml2::XMLNode* pRoot = pDoc->NewElement(XML_ELEMENT_SYMBOLTABLE);
+        tinyxml2::XMLNode* pTemp, *pSearch;
         pDoc->InsertFirstChild(pRoot);
 
         for (auto it = cbegin(); it != cend(); it++)
         {
-            if (it->second.getType() == SymbolType::st_FolderType)
+            nameMap.insert(std::make_pair(it->second.getName(), it->second));
+        }
+
+        for (auto itn = nameMap.cbegin(); itn != nameMap.cend(); itn++)
+        {
+            bool lastSubs = false;
+            std::istringstream f(itn->first);
+            std::string s;
+
+            if (itn->first.length() == 0)
+                continue;
+
+            pTemp = pRoot;
+
+            // split name into substrings and search
+            while (getline(f, s, '.'))
             {
-                pElm = pDoc->NewElement(XML_ELEMENT_FOLDER);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
-                recurseFolders(it->second.get<treeMap>(), pDoc, pElm);
-                pRoot->LinkEndChild(pElm);
-            }
-            else
-            {
-                pElm = pDoc->NewElement(XML_ELEMENT_SYMBOL);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
-                pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getType()));
-                pRoot->LinkEndChild(pElm);
+                // is substring same as string or is substring last substring
+                if (itn->first == s || itn->first.rfind("." + s) == itn->first.length() - s.length() - 1)
+                    lastSubs = true;
+
+                pSearch = pTemp->FirstChildElement(s.c_str());
+
+                // substring not found? create
+                if (!pSearch)
+                {
+                    // if base variable type add variable
+                    if (lastSubs)
+                    {
+                        pElm = pDoc->NewElement(XML_ELEMENT_SYMBOL);
+                        pElm->SetAttribute(XML_ELEMENT_ID, itn->second.getId());
+                        pElm->SetAttribute(XML_ELEMENT_NAME, s.c_str());
+                        pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(itn->second.getType()));
+                        pTemp->LinkEndChild(pElm);
+                    }
+                    else // if folder type add folder
+                    {
+                        pElm = pDoc->NewElement(XML_ELEMENT_FOLDER);
+                        pElm->SetAttribute(XML_ELEMENT_NAME, s.c_str());
+                        pTemp->LinkEndChild(pElm);
+                        pTemp = pElm;
+                    }
+                }
+                else // substring found
+                {
+                    if (!lastSubs)
+                    {
+                        pTemp = pSearch;
+                    }
+                }
             }
         }
 
@@ -370,29 +411,70 @@ namespace Symbols {
         return charVec;
     }
 
-    void SymbolTable::recurseFolders(const treeMap* m, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
-        tinyxml2::XMLNode* pNode) const
-    {
-        tinyxml2::XMLElement* pElm;
+    //std::vector<unsigned char> SymbolTable::SerializeXML() const
+    //{
+    //    tinyxml2::XMLElement* root = nullptr, * pElm = nullptr;
 
-        for (auto it = m->cbegin(); it != m->cend(); it++)
-        {
-            if (it->second.getType() == SymbolType::st_FolderType)
-            {
-                pElm = doc->NewElement(XML_ELEMENT_FOLDER);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
-                recurseFolders(it->second.get<treeMap>(), doc, pElm);
-                pNode->LinkEndChild(pElm);
-            }
-            else
-            {
-                pElm = doc->NewElement(XML_ELEMENT_SYMBOL);
-                pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
-                pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getType()));
-                pNode->LinkEndChild(pElm);
-            }
-        }
-    }
+    //    std::vector<unsigned char> charVec;
+
+    //    auto pDoc = std::make_unique<tinyxml2::XMLDocument>();
+    //    tinyxml2::XMLNode* pRoot = pDoc->NewElement(XML_ELEMENT_SYMBOLTABLE);
+    //    pDoc->InsertFirstChild(pRoot);
+
+    //    for (auto it = cbegin(); it != cend(); it++)
+    //    {
+    //        if (it->second.getType() == SymbolType::st_FolderType)
+    //        {
+    //            pElm = pDoc->NewElement(XML_ELEMENT_FOLDER);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
+    //            recurseFolders(it->second.get<treeMap>(), pDoc, pElm);
+    //            pRoot->LinkEndChild(pElm);
+    //        }
+    //        else
+    //        {
+    //            pElm = pDoc->NewElement(XML_ELEMENT_SYMBOL);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
+    //            pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getType()));
+    //            pRoot->LinkEndChild(pElm);
+    //        }
+    //    }
+
+    //    //print
+    //    tinyxml2::XMLPrinter printer;
+    //    pDoc->Accept(&printer);
+
+    //    const char* chIn = printer.CStr();
+
+    //    const char* end = chIn + strlen(chIn);
+
+    //    charVec.insert(charVec.end(), chIn, end);
+
+    //    return charVec;
+    //}
+
+    //void SymbolTable::recurseFolders(const treeMap* m, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
+    //    tinyxml2::XMLNode* pNode) const
+    //{
+    //    tinyxml2::XMLElement* pElm;
+
+    //    for (auto it = m->cbegin(); it != m->cend(); it++)
+    //    {
+    //        if (it->second.getType() == SymbolType::st_FolderType)
+    //        {
+    //            pElm = doc->NewElement(XML_ELEMENT_FOLDER);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
+    //            recurseFolders(it->second.get<treeMap>(), doc, pElm);
+    //            pNode->LinkEndChild(pElm);
+    //        }
+    //        else
+    //        {
+    //            pElm = doc->NewElement(XML_ELEMENT_SYMBOL);
+    //            pElm->SetAttribute(XML_ELEMENT_NAME, it->second.getName().c_str());
+    //            pElm->SetAttribute(XML_ELEMENT_TYPE, static_cast<int>(it->second.getType()));
+    //            pNode->LinkEndChild(pElm);
+    //        }
+    //    }
+    //}
 
     //Symbol SymbolTable::GetValue(std::string name) const
     //{

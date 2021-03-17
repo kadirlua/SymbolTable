@@ -73,7 +73,7 @@ namespace Symbols {
         st_Number = 26,
         st_Integer = 27,
         st_UInteger = 28,
-        st_FolderType = 61
+        //st_FolderType = 61
     };
 
     class Symbol;   //incomplete type declaration
@@ -242,7 +242,8 @@ namespace Symbols {
         /*Symbol(const Symbol& r) = delete;
         Symbol& operator=(const Symbol& r) = delete;*/
 
-        Symbol(std::string name, SymbolType type, const std::any& val) :
+        Symbol(uint32_t id, std::string name, SymbolType type, const std::any& val) :
+            m_id(id),
             m_name(name),
             m_type(type),
             m_value(val)
@@ -250,7 +251,8 @@ namespace Symbols {
 
         }
 
-        Symbol(std::string name, SymbolType type, std::any&& val) :
+        Symbol(uint32_t id, std::string name, SymbolType type, std::any&& val) :
+            m_id(id),
             m_name(name),
             m_type(type),
             m_value(std::move(val))
@@ -321,6 +323,14 @@ namespace Symbols {
             return m_type;
         }
 
+        /*
+        *   get the id of the object we stored in any.
+        *   returns the type of the object we created earlier.
+        */
+        uint32_t getId() const noexcept {
+            return m_id;
+        }
+
         void addEvent(int eventId, SymbolEvent symbolEvent)
         {
             events.insert(std::make_pair(eventId, symbolEvent));
@@ -335,6 +345,7 @@ namespace Symbols {
 
     private:
         SymbolType m_type{ SymbolType::st_Null };
+        uint32_t m_id;
         std::string m_name;
         std::any m_value;   //can be any value of object
 
@@ -353,6 +364,7 @@ namespace Symbols {
         static inline constexpr auto XML_ELEMENT_SYMBOL = "symbol";
         static inline constexpr auto XML_ELEMENT_NAME = "name";
         static inline constexpr auto XML_ELEMENT_TYPE = "type";
+        static inline constexpr auto XML_ELEMENT_ID = "id";
 
     public:
         SymbolTable() = default;    //default constructor
@@ -460,8 +472,8 @@ namespace Symbols {
         std::vector<unsigned char> SerializeXML() const;
 
     private:
-        void recurseFolders(const treeMap* folder, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
-            tinyxml2::XMLNode* pNode) const;
+        //void recurseFolders(const treeMap* folder, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
+        //    tinyxml2::XMLNode* pNode) const;
 
         int getSymbolIdByName(std::string name) const;
 

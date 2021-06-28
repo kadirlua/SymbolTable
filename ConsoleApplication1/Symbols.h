@@ -345,7 +345,7 @@ namespace Symbols {
 
     private:
         SymbolType m_type{ SymbolType::st_Null };
-        uint32_t m_id;
+        uint32_t m_id{};
         std::string m_name;
         std::any m_value;   //can be any value of object
 

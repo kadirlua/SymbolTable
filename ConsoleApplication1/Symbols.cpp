@@ -217,10 +217,8 @@ namespace Symbols {
             if (val.substr(0, 1) == "0") anyVal = false;
             break;
         case SymbolType::st_SByte:
-            anyVal = reinterpret_cast<char>(val.substr(0, 1).data());
-            break;
         case SymbolType::st_Byte:
-            anyVal = reinterpret_cast<unsigned char>(val.substr(0, 1).data());
+            anyVal = val[0];
             break;
         case SymbolType::st_Int16:
             is = static_cast<int>(std::strtol(val.c_str(), nullptr, 0));

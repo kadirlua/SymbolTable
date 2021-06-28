@@ -39,7 +39,7 @@
 #include <any>
 #include <functional>
 #include "ThreadSafeMap.h"
-#include "tinyxml2.h"
+#include <tinyxml2/tinyxml2.h>
 
 namespace Symbols {
     enum class SymbolType {

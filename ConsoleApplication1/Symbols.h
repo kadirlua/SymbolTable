@@ -79,7 +79,7 @@ namespace Symbols {
     class Symbol;   //incomplete type declaration
 
     //our map to hold whole datas
-    using treeMap = aricanli::container::ThreadSafeMap<int, Symbol>;    //sortable map class
+    using treeMap = aricanli::container::ThreadSafeMap<uint32_t, Symbol>;    //sortable map class
 
     class SymbolEvent
     {
@@ -131,8 +131,9 @@ namespace Symbols {
         {
         public:
             OpcServerArgs() = default;   //default constructor
-            ~OpcServerArgs() = default;  //destructor
-            OpcServerArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal)
+            ~OpcServerArgs() override = default;  //destructor
+            OpcServerArgs(std::string symbolName, SymbolType type, 
+                const std::any& oldVal, const std::any& newVal)
             {
                 m_symbolName = symbolName;
                 m_type = type;
@@ -145,8 +146,9 @@ namespace Symbols {
         {
         public:
             OpcClientArgs() = default;   //default constructor
-            ~OpcClientArgs() = default;  //destructor
-            OpcClientArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal)
+            ~OpcClientArgs() override = default;  //destructor
+            OpcClientArgs(std::string symbolName, SymbolType type, 
+                const std::any& oldVal, const std::any& newVal)
             {
                 m_symbolName = symbolName;
                 m_type = type;
@@ -159,8 +161,9 @@ namespace Symbols {
         {
         public:
             DatabaseArgs() = default;   //default constructor
-            ~DatabaseArgs() = default;  //destructor
-            DatabaseArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal, int transactionId) :
+            ~DatabaseArgs() override = default;  //destructor
+            DatabaseArgs(std::string symbolName, SymbolType type, 
+                const std::any& oldVal, const std::any& newVal, int transactionId) :
                 m_transactionId(transactionId)
             {
                 m_symbolName = symbolName;
@@ -176,8 +179,9 @@ namespace Symbols {
         {
         public:
             TransactionArgs() = default;   //default constructor
-            ~TransactionArgs() = default;  //destructor
-            TransactionArgs(std::string symbolName, SymbolType type, const std::any& oldVal, const std::any& newVal, int deviceTransactionId) :
+            ~TransactionArgs() override = default;  //destructor
+            TransactionArgs(std::string symbolName, SymbolType type, 
+                const std::any& oldVal, const std::any& newVal, int deviceTransactionId) :
                 m_deviceTransactionId(deviceTransactionId)
             {
                 m_symbolName = symbolName;
@@ -193,7 +197,7 @@ namespace Symbols {
 
     public:
         SymbolEvent() = default;   //default constructor
-        ~SymbolEvent() = default;  //destructor
+        virtual ~SymbolEvent() = default;  //destructor
         SymbolEvent(int eventId, EventType type, EventFireType fireType, const symbol_event_t& callback) :
             m_eventId(eventId),
             m_type(type),
@@ -218,9 +222,9 @@ namespace Symbols {
         symbol_event_t m_event;
 
     private:
-        int m_eventId = 0;
-        EventType m_type = EventType::et_None;
-        EventFireType m_fireType = EventFireType::eft_AnyChange;
+        int m_eventId{};
+        EventType m_type{ EventType::et_None };
+        EventFireType m_fireType{ EventFireType::eft_AnyChange };
     };
 
 
@@ -233,7 +237,7 @@ namespace Symbols {
     class Symbol {
     public:
         Symbol() = default;   //default constructor
-        ~Symbol() = default;  //destructor
+        virtual ~Symbol() = default;  //destructor
 
         /*
         *   if you want to noncopyable, just uncomment
@@ -242,20 +246,24 @@ namespace Symbols {
         /*Symbol(const Symbol& r) = delete;
         Symbol& operator=(const Symbol& r) = delete;*/
 
-        Symbol(uint32_t id, std::string name, SymbolType type, const std::any& val) :
-            m_id(id),
-            m_name(name),
-            m_type(type),
-            m_value(val)
+        Symbol(uint32_t id, std::string name, std::string desc,
+            SymbolType type, const std::any& val) :
+            m_id{ id },
+            m_name{ name },
+            m_desc{ desc },
+            m_type{ type },
+            m_value{ val }
         {
 
         }
 
-        Symbol(uint32_t id, std::string name, SymbolType type, std::any&& val) :
-            m_id(id),
-            m_name(name),
-            m_type(type),
-            m_value(std::move(val))
+        Symbol(uint32_t id, std::string name, std::string desc, 
+            SymbolType type, std::any&& val) :
+            m_id{ id },
+            m_name{ name },
+            m_desc{ desc },
+            m_type{ type },
+            m_value{ std::move(val) }
         {
 
         }
@@ -282,6 +290,14 @@ namespace Symbols {
         */
         std::string getName() const noexcept {
             return m_name;
+        }
+
+        /*
+        *   get the description of the symbol.
+        *   returns the name of an object we created earlier.
+        */
+        std::string getDescription() const noexcept {
+            return m_desc;
         }
 
         /*
@@ -331,24 +347,23 @@ namespace Symbols {
             return m_id;
         }
 
-        void addEvent(int eventId, SymbolEvent symbolEvent)
+        bool addEvent(int eventId, SymbolEvent symbolEvent)
         {
-            events.insert(std::make_pair(eventId, symbolEvent));
+            auto result = m_events.emplace(eventId, symbolEvent);
+            return result.second;
         }
 
         void removeEvent(int eventId)
         {
-            events.erase(eventId);
+            m_events.erase(eventId);
         }
 
-        aricanli::container::ThreadSafeMap<int, SymbolEvent> events;
-
-    private:
+    protected:
         SymbolType m_type{ SymbolType::st_Null };
         uint32_t m_id{};
-        std::string m_name;
+        std::string m_name, m_desc;
         std::any m_value;   //can be any value of object
-
+        aricanli::container::ThreadSafeMap<int, SymbolEvent> m_events;
     };
 
     /*
@@ -357,22 +372,23 @@ namespace Symbols {
     *   One more thing, there should be something wrong with storing pointers, this class does not guaranteed
     *   to clean up pointer addresses. So be careful with dynamic memory allocations.
     */
-    class SymbolTable final : public treeMap
+    class SymbolTable : public treeMap
     {
         static inline constexpr auto XML_ELEMENT_SYMBOLTABLE = "symboltable";
         static inline constexpr auto XML_ELEMENT_FOLDER = "folder";
         static inline constexpr auto XML_ELEMENT_SYMBOL = "symbol";
         static inline constexpr auto XML_ELEMENT_NAME = "name";
+        static inline constexpr auto XML_ELEMENT_DESC = "desc";
         static inline constexpr auto XML_ELEMENT_TYPE = "type";
         static inline constexpr auto XML_ELEMENT_ID = "id";
 
     public:
         SymbolTable() = default;    //default constructor
-        ~SymbolTable() = default;   //destructor
+        virtual ~SymbolTable() = default;   //destructor
 
         //noncopyable SymbolTable interface
-        SymbolTable(const SymbolTable& r) = delete;
-        SymbolTable& operator=(const SymbolTable& r) = delete;
+        /*SymbolTable(const SymbolTable& r) = delete;
+        SymbolTable& operator=(const SymbolTable& r) = delete;*/
 
     public:
         /*
@@ -389,7 +405,7 @@ namespace Symbols {
         *   id: Symbol Id which is the key of the map.
         *   Returns: returns value of map entry, otherwise empty class.
         */
-        Symbol GetValue(int id) const;
+        Symbol GetValue(uint32_t id) const;
 
         /*
         *   Set value of a symbol instance by name.
@@ -407,7 +423,7 @@ namespace Symbols {
         *   value: any type of variable to hold into map.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool SetValue(int id, std::any value);
+        bool SetValue(uint32_t id, std::any value);
 
         /*
         *   Add an event to a symbol instance by name.
@@ -425,28 +441,32 @@ namespace Symbols {
         *   symbolEvent: a Symbols::SymbolEvent instance.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool AddEvent(int id, Symbols::SymbolEvent symbolEvent);
+        bool AddEvent(uint32_t id, Symbols::SymbolEvent symbolEvent);
 
         /*
         *   Insert a symbol.
         *   Params:
         *   id: Symbol id.
         *   name: Symbol name.
+        *   desc: Symbol description.
         *   type: type of variable we send.
         *   value: any type of variable to hold into map.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool InsertValue(int id, std::string name, SymbolType type, std::any value);
+        bool InsertValue(uint32_t id, std::string name, std::string desc,
+            SymbolType type, std::any value);
 
         /*
         *   Insert a symbol by name. Converts string parameter to any<type>.
         *   Params:
         *   name: Symbol name.
+        *   desc: Symbol description.
         *   type: type of variable we send.
         *   value: any type of variable to hold into map.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool InsertFromStringValue(int id, std::string name, SymbolType type, std::string value);
+        bool InsertFromStringValue(uint32_t id, std::string name, std::string desc,
+            SymbolType type, std::string value);
 
         /*
         *   Delete a symbol by name.
@@ -462,7 +482,7 @@ namespace Symbols {
         *   id: Symbol Id which is the key of the map.
         *   Returns: returns true if successful, otherwise false.
         */
-        bool DeleteValue(int id);
+        bool DeleteValue(uint32_t id);
 
         /*
         *   Serialize the symbol table to XML.
@@ -475,7 +495,7 @@ namespace Symbols {
         //void recurseFolders(const treeMap* folder, const std::unique_ptr<tinyxml2::XMLDocument>& doc,
         //    tinyxml2::XMLNode* pNode) const;
 
-        int getSymbolIdByName(std::string name) const;
+        int getSymbolIdByName(std::string name) const noexcept;
 
     };
 }
